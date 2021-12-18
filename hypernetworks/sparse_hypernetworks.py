@@ -41,14 +41,13 @@ class SparseLinear(nn.Module):
         values = torch.randn(out_size * connectivity)
         indices, values = coalesce(indices.type(
             torch.long), values, out_size, in_size, op="add")
-        self.indices = nn.Parameter(indices.type(torch.float))
+        self.register_buffer('indices', indices) #nn.Parameter(indices.type(torch.float))
         values = (torch.rand_like(values) - 0.5) * 2 * \
             math.sqrt(3 / (len(values)/out_size))
         self.values = nn.Parameter(values)
 
     def forward(self, x):
-        # return torch.sparse.mm(self.weight, x.t()).t()
-        return spmm(self.indices.type(torch.long), self.values, self.out_size, self.in_size, x.t()).t()
+        return spmm(self.indices, self.values, self.out_size, self.in_size, x.t()).t()
 
     def extra_repr(self) -> str:
         return 'in_size={}, out_size={}'.format(
