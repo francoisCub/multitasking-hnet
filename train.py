@@ -30,35 +30,34 @@ if __name__ == "__main__":
                         help='input (default: "task")')
     max_epochs = 2
     batch_size = 50
-    in_channels = 3
-    size = 32
-    hnet = "sparse"
-    input_type = parser.input
-    latent_size = 32
-    n = 1
     use_sgd = False
     learning_rate = 1e-3
     patience = 6
     monitor = "Val Loss"
     log_dir = "test_cifar_logs"
     csv_log_dir = "test_cifar_logs_csv"
+    ckpt_path = "cifar_ckpt"
+    accumulate_grad_batches = 1
+    gradient_clip_val = 1.0
+    fast_dev_run = parser.dev == 0
+
+    in_channels = 3
+    hnet = "sparse"
+    input_type = parser.input
+    latent_size = 32
+    n = 1
     base = 2
     distribution = "normal"
     connectivity_type = "linear-decrease"
     connectivity = 3
     activation = "prelu"
-    ckpt_path = "cifar_ckpt"
+    batch = (input_type == "input" or input_type == "input-task")
+    sigma = torch.Tensor([latent_size//4])
+
     print(f"learning_rate: {learning_rate}")
     print(f"input_type: {input_type}")
     name = "-".join([hnet, input_type, activation, distribution,
                     connectivity_type, str(connectivity)])
-
-    accumulate_grad_batches = 1
-    gradient_clip_val = 1.0
-    fast_dev_run = parser.dev == 0
-
-    batch = (input_type == "input" or input_type == "input-task")
-    sigma = torch.Tensor([latent_size//4])
 
     num_class_per_task = 10
     num_classes = num_class_per_task
