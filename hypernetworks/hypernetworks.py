@@ -149,6 +149,8 @@ class HyperNetwork(nn.Module):
     def forward(self, x, z=None):
         # Compute z
         z = self.encode_input(x, z)
+        if z.shape[-1] != self.latent_size:
+            raise ValueError(f"Expected {self.latent_size}, got z of shape {z.shape}")
 
         # Compute params with hnet. (by batch or unique)
         params = self.forward_hnet_batch(
