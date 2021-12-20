@@ -14,7 +14,7 @@ def get_sorted_dataset(dataset, batch_size, log=True):
     for k in indices.keys():
         indices[k] = indices[k][:len(
             indices[k])-(len(indices[k]) % batch_size)]
-    datasets = [Subset(dataset, idx) for (cls, idx) in indices.items()]
+    datasets = [Subset(dataset, idx) for (cls, idx) in sorted(indices.items())]
     if log:
         print(f"{len(datasets)} classes")
     sorted_dataset = ConcatDataset(datasets)
