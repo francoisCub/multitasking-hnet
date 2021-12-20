@@ -134,3 +134,4 @@ dmypy.json
 # Logs
 lightning_logs
 test_cifar_logs
+cifar_ckpt
