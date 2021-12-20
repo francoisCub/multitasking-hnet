@@ -1,17 +1,17 @@
 from typing import Iterator, List
 
 from pytorch_lightning import LightningDataModule
-from torch import LongTensor, randperm, stack, unique
+from torch import LongTensor, randperm, stack, unique, cat
 from torch.utils.data import DataLoader, Sampler, SequentialSampler, Subset
-from torchvision.datasets import CIFAR100
+from torchvision.datasets import CIFAR100, CIFAR10
 from torchvision.transforms import (Compose, Normalize, RandomCrop,
-                                    RandomHorizontalFlip, ToTensor)
+                                    RandomHorizontalFlip, ToTensor, RandomAffine)
 
 from data.utils import get_sorted_dataset
 
 
 class CifarBatchSampler(Sampler[List[int]]):
-    def __init__(self, sampler: Sampler[int], batch_size: int, drop_last: bool) -> None:
+    def __init__(self, sampler: Sampler[int], batch_size: int, drop_last: bool, num_tasks: int) -> None:
         if not isinstance(batch_size, int) or isinstance(batch_size, bool) or \
                 batch_size <= 0:
             raise ValueError("batch_size should be a positive integer value, "
@@ -26,10 +26,13 @@ class CifarBatchSampler(Sampler[List[int]]):
         if n % batch_size != 0:
             raise ValueError(
                 "dataset size should be a multiple of the batch size")
-
+        if n % num_tasks != 0:
+            raise ValueError()
+        init_idx = LongTensor(list(range(n))).split(n//num_tasks)
+        new_idx = cat([idx_slice[randperm(len(idx_slice))] for idx_slice in init_idx])
+        idx = new_idx.split(batch_size)
         base_idx = randperm(n//batch_size)
-        self.idx = iter([[base_id*batch_size+i for i in range(batch_size)]
-                        for base_id in base_idx])
+        self.idx = stack(idx)[base_idx]
 
     def __iter__(self) -> Iterator[List[int]]:
         yield from self.idx
@@ -39,12 +42,13 @@ class CifarBatchSampler(Sampler[List[int]]):
 
 
 class LightningCifar(LightningDataModule):
-    def __init__(self, data_dir=".data", batch_size=25, num_class_per_task=10, n_classes=100):
+    def __init__(self, batch_size, cifar=100,  data_dir=".data", num_class_per_task=10, n_classes=100, num_tasks=10):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.transform = Compose([RandomCrop(32, padding=4, padding_mode='reflect'),
                                   RandomHorizontalFlip(),
+                                #   RandomAffine(degrees=30, scale=(.9, 1.1), shear=0),
                                   ToTensor(),
                                   Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
         self.test_transform = Compose([
@@ -52,16 +56,20 @@ class LightningCifar(LightningDataModule):
             Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
         self.num_class_per_task = num_class_per_task
         self.n_classes = n_classes
+        self.dataset_gen = CIFAR100 if cifar == 100 else CIFAR10
+        if n_classes != num_tasks * num_class_per_task:
+            raise ValueError()
+        self.num_tasks = num_tasks
 
     def prepare_data(self):
-        CIFAR100(root=self.data_dir, train=True,
+        self.dataset_gen(root=self.data_dir, train=True,
                  download=True, transform=ToTensor())
-        CIFAR100(root=self.data_dir, train=False,
+        self.dataset_gen(root=self.data_dir, train=False,
                  download=True, transform=ToTensor())
 
     def setup(self, stage):
         if stage == "fit" or stage is None:
-            data_full = CIFAR100(root=self.data_dir, train=True,
+            data_full = self.dataset_gen(root=self.data_dir, train=True,
                                  download=False, transform=self.transform)
             self.data_train, self.data_val = self.split_dataset(
                 data_full)
@@ -70,7 +78,7 @@ class LightningCifar(LightningDataModule):
             self.data_val = get_sorted_dataset(self.data_val, self.batch_size)
 
         if stage == "test" or stage is None:
-            self.data_test = CIFAR100(
+            self.data_test = self.dataset_gen(
                 root=self.data_dir, train=False, download=False, transform=self.test_transform)
             self.data_test = get_sorted_dataset(
                 self.data_test, self.batch_size)
@@ -85,7 +93,7 @@ class LightningCifar(LightningDataModule):
         return DataLoader(self.data_test, batch_sampler=self.batch_sampler(self.data_test), collate_fn=self.get_collate_fn())
 
     def batch_sampler(self, dataset):
-        return CifarBatchSampler(SequentialSampler(dataset), batch_size=self.batch_size, drop_last=False)
+        return CifarBatchSampler(SequentialSampler(dataset), batch_size=self.batch_size, drop_last=False, num_tasks=self.num_tasks)
 
     def get_collate_fn(self):
         num_class_per_task = self.num_class_per_task
