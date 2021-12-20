@@ -31,6 +31,20 @@ class ConvTaskEnsembleMNIST(nn.Module):
         return y
 
 
+class ConvTaskEnsembleCIFAR(nn.Module):
+    def __init__(self, resnet_base, in_channels, num_classes, n=1, nbr_task=10):
+        super().__init__()
+        self.task_models = nn.ModuleList(
+            [resnet_base(in_channels=in_channels, num_classes=num_classes, n=n) for _ in range(nbr_task)])
+
+    def forward(self, x, task=None):
+        task = unique(task)
+        if len(task) > 1:
+            raise ValueError()
+        y = self.task_models[task](x)
+        return y
+
+
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
         super().__init__()
@@ -57,12 +71,16 @@ class ResidualBlock(nn.Module):
         else:
             return self.relu2(out) + self.conv1x1(x)
 
+
 class ExampleCifar(nn.Module):
     def __init__(self, num_classes=10, in_channels=3, n=1):
         super().__init__()
-        self.net = nn.Sequential(nn.Flatten(), nn.Linear(in_channels*32*32, num_classes))
+        self.net = nn.Sequential(nn.Flatten(), nn.Linear(
+            in_channels*32*32, num_classes))
+
     def forward(self, x):
         return self.net(x)
+
 
 class TinyResNet(nn.Module):
     def __init__(self, in_channels, num_classes, n=1):
@@ -90,6 +108,7 @@ class TinyResNet(nn.Module):
         out = self.res5(out)
         out = self.classifier(out)
         return out
+
 
 class SmallResNet(nn.Module):
     def __init__(self, in_channels, num_classes, n=1):
@@ -150,5 +169,43 @@ class ResNet(nn.Module):
         out = self.res5(out)
         out = self.res6(out)
         out = self.res7(out)
+        out = self.classifier(out)
+        return out
+
+# Resnet and conv_block from https://www.kaggle.com/kmldas/cifar10-resnet-90-accuracy-less-than-5-min
+
+
+def conv_block(in_channels, out_channels, pool=False):
+    layers = [nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+              nn.BatchNorm2d(out_channels),
+              nn.ReLU(inplace=True)]
+    if pool:
+        layers.append(nn.MaxPool2d(2))
+    return nn.Sequential(*layers)
+
+
+class ResNet9(nn.Module):
+    def __init__(self, in_channels, num_classes):
+        super().__init__()
+
+        self.conv1 = conv_block(in_channels, 64)
+        self.conv2 = conv_block(64, 128, pool=True)
+        self.res1 = nn.Sequential(conv_block(128, 128), conv_block(128, 128))
+
+        self.conv3 = conv_block(128, 256, pool=True)
+        self.conv4 = conv_block(256, 512, pool=True)
+        self.res2 = nn.Sequential(conv_block(512, 512), conv_block(512, 512))
+
+        self.classifier = nn.Sequential(nn.MaxPool2d(4),
+                                        nn.Flatten(),
+                                        nn.Linear(512, num_classes))
+
+    def forward(self, xb):
+        out = self.conv1(xb)
+        out = self.conv2(out)
+        out = self.res1(out) + out
+        out = self.conv3(out)
+        out = self.conv4(out)
+        out = self.res2(out) + out
         out = self.classifier(out)
         return out
