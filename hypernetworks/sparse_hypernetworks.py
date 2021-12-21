@@ -115,7 +115,7 @@ class HnetSparse(nn.Module):
             elif activation == "relu":
                 layer_list.append(nn.ReLU())
             elif activation == "prelu":
-                layer_list.append(nn.PReLU())
+                layer_list.append(nn.PReLU(init=1.0))
             current_size = int(current_size / self.base)
             if connectivity_type == "linear-decrease":
                 self.connectivity += step
