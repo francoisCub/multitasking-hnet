@@ -177,7 +177,7 @@ class ResNet(nn.Module):
 
 def conv_block(in_channels, out_channels, pool=False):
     layers = [nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
-              nn.BatchNorm2d(out_channels),
+            #   nn.BatchNorm2d(out_channels), # we don't do that here
               nn.ReLU(inplace=True)]
     if pool:
         layers.append(nn.MaxPool2d(2))
@@ -185,7 +185,7 @@ def conv_block(in_channels, out_channels, pool=False):
 
 
 class ResNet9(nn.Module):
-    def __init__(self, in_channels, num_classes):
+    def __init__(self, in_channels, num_classes, n=1):
         super().__init__()
 
         self.conv1 = conv_block(in_channels, 64)
