@@ -17,7 +17,7 @@ from hypernetworks.utils import estimate_connectivity, compute_nbr_params
 
 class LightningClassifierTask(LightningModule):
     def __init__(self, model, batch_size, latent_size,
-                 learning_rate=0.001, monitor=None, patience=None, use_sgd=False):
+                 learning_rate=0.001, monitor=None, patience=None, use_sgd=False, lr_reduce=False):
         super().__init__()
         self.model = model
         self.latent_size = latent_size
@@ -27,6 +27,7 @@ class LightningClassifierTask(LightningModule):
         self.loss_function = nn.CrossEntropyLoss()
         self.monitor = monitor
         self.patience = patience
+        self.lr_reduce = lr_reduce
 
     def forward(self, x: torch.Tensor, task=None):
         return self.model(x, task)
@@ -48,7 +49,15 @@ class LightningClassifierTask(LightningModule):
                     "monitor": self.monitor,
                 },
             }
-        return optim.Adam(self.parameters(), lr=self.learning_rate)
+        else:
+            optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
+        optimizers = {"optimizer": optimizer}
+        if self.lr_reduce:
+            optimizers["lr_scheduler"] = {
+                    "scheduler": ReduceLROnPlateau(optimizer, patience=self.patience//2, factor=0.1),
+                    "monitor": self.monitor,
+                }
+        return optimizers
 
     def test_step(self, batch, batch_idx):
         x, y, classes, task = batch

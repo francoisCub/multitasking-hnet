@@ -19,7 +19,7 @@ def get_resnet9(in_channels, num_classes, n):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='OvOMNIST')
+    parser = argparse.ArgumentParser(description='CIFAR')
     parser.add_argument('--dev', type=int, default=0, metavar='d',
                         help='fast dev run (default: 0)')
 
@@ -28,22 +28,26 @@ if __name__ == "__main__":
 
     parser.add_argument('--input', type=str, default="task", metavar='i',
                         help='input (default: "task")')
-    max_epochs = 2
+    parser.add_argument('--model', type=str, default="hnet", metavar='m',
+                        help='model (default: "hnet") other: "experts"')
+    args = parser.parse_args()
+    max_epochs = 100
     batch_size = 50
     use_sgd = False
     learning_rate = 1e-3
-    patience = 6
+    patience = 3
     monitor = "Val Loss"
     log_dir = "test_cifar_logs"
     csv_log_dir = "test_cifar_logs_csv"
     ckpt_path = "cifar_ckpt"
     accumulate_grad_batches = 1
     gradient_clip_val = 1.0
-    fast_dev_run = parser.dev == 0
+    fast_dev_run = args.dev != 0
+    lr_reduce = False
 
     in_channels = 3
     hnet = "sparse"
-    input_type = parser.input
+    input_type = args.input
     latent_size = 32
     n = 1
     base = 2
@@ -53,55 +57,79 @@ if __name__ == "__main__":
     activation = "prelu"
     batch = (input_type == "input" or input_type == "input-task")
     sigma = torch.Tensor([latent_size//4])
+    step = 1
+
+    model_to_test = args.model
 
     print(f"learning_rate: {learning_rate}")
     print(f"input_type: {input_type}")
-    name = "-".join([hnet, input_type, activation, distribution,
-                    connectivity_type, str(connectivity)])
+    print(f"batch_size: {batch_size}")
+    print(f"model to test: {model_to_test}")
+
+    resnet = ResNet9
+    resnet_name = resnet.__name__
 
     num_class_per_task = 10
     num_classes = num_class_per_task
     n_classes = 100
     num_tasks = n_classes // num_class_per_task
 
-    target_model = SmallResNet(
-        in_channels=in_channels, num_classes=num_classes, n=n)
-    if batch:
-        encoder = SmallResNet(in_channels=in_channels,
-                              num_classes=latent_size, n=1)
-
-    if batch:
-        batch_target_model = BatchTargetModel(
-            batch_size=batch_size, target_model=target_model)
-    else:
-        batch_target_model = TargetModel(target_model=target_model)
-
-    model = HyperNetwork(batch_target_model=batch_target_model, hnet=hnet, input_type=input_type, encoder=encoder, latent_size=latent_size, batch=batch, sigma=sigma,
-                         base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation)
-    model = ConvTaskEnsembleCIFAR(
-        SmallResNet, nbr_task=num_tasks, in_channels=in_channels, n=1, num_classes=num_classes)
-
-    logger = TensorBoardLogger(save_dir=log_dir, name=name)
-    csv_logger = CSVLogger(save_dir=log_dir, name=name)
     data = LightningCifar(batch_size=batch_size, num_class_per_task=num_class_per_task,
-                          n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks)
+                              n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks)
 
-    # Callbacks
-    early_stopping_callback = EarlyStopping(
-        monitor=monitor, patience=patience)
-    checkpoint_callback = ModelCheckpoint(
-        monitor=monitor,
-        dirpath=ckpt_path,
-        filename=name + "-cifar-{epoch:02d}",
-    )
-    lr_monitor_callback = LearningRateMonitor()
+    for accumulate_grad_batches in [1, 3, 5, 10]:
+        print(f"accumulate_grad_batches: {accumulate_grad_batches}")
 
-    pl_model = LightningClassifierTask(model=model, batch_size=batch_size, patience=patience, monitor=monitor,
-                                       latent_size=latent_size, learning_rate=learning_rate, use_sgd=use_sgd)
+        if model_to_test == "hnet":
+            name = "-".join([hnet, input_type, activation, distribution,
+                            connectivity_type, f"c={connectivity}", resnet_name, f"n={n}", f"gradacc={accumulate_grad_batches}", f"stp={step}"])
+        else:
+            name = "-".join(["Experts", resnet_name,
+                            f"gradacc={accumulate_grad_batches}"])
 
-    trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=False, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
-                      track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
 
-    trainer.fit(pl_model, data)
-    if not fast_dev_run:
-        trainer.test(ckpt_path="best", dataloaders=data)
+        target_model = resnet(
+            in_channels=in_channels, num_classes=num_classes, n=n)
+        if batch:
+            encoder = resnet(in_channels=in_channels,
+                             num_classes=latent_size, n=1)
+        else:
+            encoder = None
+
+        if batch:
+            batch_target_model = BatchTargetModel(
+                batch_size=batch_size, target_model=target_model)
+        else:
+            batch_target_model = TargetModel(target_model=target_model)
+
+        if model_to_test == "hnet":
+            model = HyperNetwork(batch_target_model=batch_target_model, hnet=hnet, input_type=input_type, encoder=encoder, latent_size=latent_size, batch=batch, sigma=sigma,
+                                 base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step)
+        elif model_to_test == "experts":
+            model = ConvTaskEnsembleCIFAR(
+                resnet, nbr_task=num_tasks, in_channels=in_channels, n=1, num_classes=num_classes)
+        else:
+            raise ValueError()
+
+        logger = TensorBoardLogger(save_dir=log_dir, name=name)
+        csv_logger = CSVLogger(save_dir=log_dir, name=name)
+
+        # Callbacks
+        early_stopping_callback = EarlyStopping(
+            monitor=monitor, patience=patience)
+        checkpoint_callback = ModelCheckpoint(
+            monitor=monitor,
+            dirpath=ckpt_path,
+            filename=name + "-cifar-{epoch:02d}",
+        )
+        lr_monitor_callback = LearningRateMonitor()
+
+        pl_model = LightningClassifierTask(model=model, batch_size=batch_size, patience=patience, monitor=monitor,
+                                           latent_size=latent_size, learning_rate=learning_rate, use_sgd=use_sgd, lr_reduce=lr_reduce)
+
+        trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=False, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+                          track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
+
+        trainer.fit(pl_model, data)
+        if not fast_dev_run:
+            trainer.test(ckpt_path="best", dataloaders=data)
