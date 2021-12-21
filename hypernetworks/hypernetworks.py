@@ -47,7 +47,7 @@ class HyperNetwork(nn.Module):
             self.task_encoder.weight = nn.Parameter(
                 torch.randn_like(self.task_encoder.weight))
             self.mixer = nn.Bilinear(
-                self.num_tasks, self.num_tasks, self.latent_size)
+                self.latent_size, self.num_tasks, self.latent_size)
             self.encoder = encoder  # get_encoder('encoder-resnet')
         else:
             raise ValueError()
@@ -68,8 +68,8 @@ class HyperNetwork(nn.Module):
         elif hnet == "sparse":
             idx = 0
             module_list = []
-            for _, _, target_size in self.target_model.get_params_info():
-                module_list.append(Selector(idx, target_size))
+            for _, shape, target_size in self.target_model.get_params_info():
+                module_list.append(Selector(idx, target_size, shape=shape))
                 idx += target_size
             self.layer_heads = nn.ModuleList(module_list)
             # idx = total_size
@@ -79,8 +79,8 @@ class HyperNetwork(nn.Module):
         elif hnet == "benes":
             idx = 0
             module_list = []
-            for _, _, target_size in self.target_model.get_params_info():
-                module_list.append(Selector(idx, target_size))
+            for _, shape, target_size in self.target_model.get_params_info():
+                module_list.append(Selector(idx, target_size, shape=shape))
                 idx += target_size
             self.layer_heads = nn.ModuleList(module_list)
             self.core = BenesOne(self.latent_size, idx, full=True)
