@@ -39,3 +39,9 @@ def set_param(module: nn.Module, module_list, param):
         setattr(module, module_list[0], param)
     else:
         set_param(getattr(module, module_list[0]), module_list[1:], param)
+
+def get_param(module: nn.Module, module_list):
+    if len(module_list) == 1:
+        return getattr(module, module_list[0])
+    else:
+        return get_param(getattr(module, module_list[0]), module_list[1:])
