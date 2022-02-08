@@ -5,7 +5,7 @@ from torch.utils.data import ConcatDataset, Subset
 from tqdm import tqdm
 
 
-def get_sorted_dataset(dataset, batch_size, log=True):
+def get_sorted_dataset(dataset, batch_size, log=True, equalize=False):
     if log:
         print(f"Initial length: {len(dataset)}")
     indices = defaultdict(list)
@@ -14,6 +14,10 @@ def get_sorted_dataset(dataset, batch_size, log=True):
     for k in indices.keys():
         indices[k] = indices[k][:len(
             indices[k])-(len(indices[k]) % batch_size)]
+    if equalize:
+        min_nbr = min(len(indices[k]) for k in indices.keys())
+        for k in indices.keys():
+            indices[k] = indices[k][:min_nbr]
     datasets = [Subset(dataset, idx) for (cls, idx) in sorted(indices.items())]
     if log:
         print(f"{len(datasets)} classes")
