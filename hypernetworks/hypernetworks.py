@@ -11,7 +11,7 @@ from hypernetworks.sparse_hypernetworks import BenesOne, HnetSparse
 class HyperNetwork(nn.Module):
     def __init__(self, batch_target_model: nn.Module, input_type="learned", hnet="linear", latent_size=32,
                  encoder=None, mode="one_block", variation=False, batch=True, one_vector=False, num_tasks=None, aggregate=False,
-                 distribution="normal", connectivity_type="linear-decrease", connectivity=3, sigma=torch.Tensor([2]), activation="prelu", step=1, base=2) -> None:
+                 distribution="normal", connectivity_type="linear-decrease", connectivity=3, sigma=torch.Tensor([2]), activation="prelu", step=1, base=2, nbr_chunks=8) -> None:
         super().__init__()
         # Init
         self.target_model = batch_target_model
@@ -21,7 +21,7 @@ class HyperNetwork(nn.Module):
         self.aggregate = aggregate
         if self.batch:
             self.batch_size = batch_target_model.batch_size
-        if (input_type == "input" or input_type == "input-type") and not self.batch:
+        if (input_type == "input" or input_type == "input-task") and not self.batch:
             raise ValueError()
 
         # Core
@@ -84,7 +84,19 @@ class HyperNetwork(nn.Module):
                 idx += target_size
             self.layer_heads = nn.ModuleList(module_list)
             self.core = BenesOne(self.latent_size, idx, full=True)
-
+        
+        elif hnet == "chunked":
+            idx = 0
+            module_list = []
+            for _, shape, target_size in self.target_model.get_params_info():
+                module_list.append(Selector(idx, target_size, shape=shape))
+                idx += target_size
+            if idx % nbr_chunks != 0:
+                raise ValueError()
+            self.layer_heads = nn.ModuleList(module_list)
+            raise NotImplementedError()
+            # self.core = HnetChnuked(self.latent_size, idx, batch=batch)
+            
         else:
             raise ValueError("hnet should be in linear or MLP")
 
