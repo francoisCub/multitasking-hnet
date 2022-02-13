@@ -3,6 +3,7 @@ import random
 from collections import OrderedDict
 import argparse
 import math
+import time
 
 import torch
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
@@ -37,6 +38,7 @@ class LightningClassifierTask(LightningModule):
         y_hat = self.model(x, task)
         loss = self.loss_function(y_hat, y)
         self.log("Train Loss", loss.detach())
+        self.log("Wall time", time.time())
         return loss
 
     def configure_optimizers(self):
