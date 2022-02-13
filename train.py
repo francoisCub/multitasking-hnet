@@ -25,6 +25,11 @@ if __name__ == "__main__":
 
     parser.add_argument('--lr', type=float, default=1e-3, metavar='l',
                         help='learning rate (default: 1e-3)')
+    parser.add_argument('--bs', type=int, default=50, metavar='b',
+                        help='batch size (default: 50)')
+    
+    parser.add_argument('--nonlin', type=str, default="linear", metavar='n',
+                        help='non linearities (default: linear), other: MLPnobias, MLPwithbias, affine')
 
     parser.add_argument('--input', type=str, default="task", metavar='i',
                         help='input (default: "task")')
@@ -32,29 +37,42 @@ if __name__ == "__main__":
                         help='model (default: "hnet") other: "experts"')
     args = parser.parse_args()
     max_epochs = 100
-    batch_size = 50
+    batch_size = args.bs # 50
     use_sgd = False
-    learning_rate = 1e-3
-    patience = 3
+    learning_rate = args.lr
+    patience = 10
     monitor = "Val Loss"
-    log_dir = "test_cifar_logs"
-    csv_log_dir = "test_cifar_logs_csv"
-    ckpt_path = "cifar_ckpt"
-    accumulate_grad_batches = 1
+    log_dir = "split_cifar"
+    csv_log_dir = "split_cifar_csv"
+    ckpt_path = "split_cifar_ckpt"
+    accumulate_grad_batches = 3
     gradient_clip_val = 1.0
     fast_dev_run = args.dev != 0
-    lr_reduce = False
+    lr_reduce = True
 
     in_channels = 3
     hnet = "sparse"
     input_type = args.input
-    latent_size = 32
+    latent_size = 256
     n = 1
     base = 2
     distribution = "normal"
     connectivity_type = "linear-decrease"
-    connectivity = 3
-    activation = "prelu"
+    connectivity = 3 # not used for linear decrease
+    if args.nonlin == "linear":
+        activation = "none"
+        bias = False
+    elif args.nonlin == "affine":
+        bias = True
+        raise NotImplementedError()
+    elif args.nonlin == "MLPbias":
+        bias = True
+        raise NotImplementedError()
+    elif args.nonlin == "MLPnobias":
+        bias = False
+        raise NotImplementedError()
+    else:
+        raise ValueError()
     batch = (input_type == "input" or input_type == "input-task")
     sigma = torch.Tensor([latent_size//4])
     step = 1
@@ -65,8 +83,10 @@ if __name__ == "__main__":
     print(f"input_type: {input_type}")
     print(f"batch_size: {batch_size}")
     print(f"model to test: {model_to_test}")
+    print(f"non linearity: {args.nonlin}")
+    print(f"fast_dev_run: {fast_dev_run}")
 
-    resnet = ResNet9
+    resnet = ResNet
     resnet_name = resnet.__name__
 
     num_class_per_task = 10
@@ -77,15 +97,13 @@ if __name__ == "__main__":
     data = LightningCifar(batch_size=batch_size, num_class_per_task=num_class_per_task,
                               n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks)
 
-    for accumulate_grad_batches in [1, 3, 5, 10]:
-        print(f"accumulate_grad_batches: {accumulate_grad_batches}")
+    for version in range(5):
 
         if model_to_test == "hnet":
-            name = "-".join([hnet, input_type, activation, distribution,
-                            connectivity_type, f"c={connectivity}", resnet_name, f"n={n}", f"gradacc={accumulate_grad_batches}", f"stp={step}"])
+            name = "-".join([hnet, input_type, activation, f"bias={bias}", distribution,
+                            connectivity_type, resnet_name, f"stp={step}"])
         else:
-            name = "-".join(["Experts", resnet_name,
-                            f"gradacc={accumulate_grad_batches}"])
+            name = "-".join(["Experts", resnet_name])
 
 
         target_model = resnet(
