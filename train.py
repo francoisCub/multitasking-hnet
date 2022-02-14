@@ -9,7 +9,7 @@ from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 from data.cifar import LightningCifar
 from hypernetworks.hypernetworks import HyperNetwork
 from hypernetworks.target_models import BatchTargetModel, TargetModel
-from models.vision import ConvTaskEnsembleCIFAR, ResNet, ResNet9, SmallResNet
+from models.vision import ConvTaskEnsembleCIFAR, ResNet, ResNet32x32, ResNet9, SmallResNet
 from train.trainer import LightningClassifierTask
 
 
@@ -53,8 +53,8 @@ if __name__ == "__main__":
     in_channels = 3
     hnet = "sparse"
     input_type = args.input
-    latent_size = 256
-    n = 1
+    latent_size = 64
+    n = 5 # Resnet depth parameter
     base = 2
     distribution = "normal"
     connectivity_type = "linear-decrease"
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     print(f"non linearity: {args.nonlin}")
     print(f"fast_dev_run: {fast_dev_run}")
 
-    resnet = ResNet
+    resnet = ResNet32x32
     resnet_name = resnet.__name__
 
     num_class_per_task = 10
