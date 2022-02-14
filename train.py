@@ -130,7 +130,7 @@ if __name__ == "__main__":
             raise ValueError()
 
         logger = TensorBoardLogger(save_dir=log_dir, name=name)
-        csv_logger = CSVLogger(save_dir=log_dir, name=name)
+        csv_logger = CSVLogger(save_dir=csv_log_dir, name=name)
 
         # Callbacks
         early_stopping_callback = EarlyStopping(
