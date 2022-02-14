@@ -147,7 +147,7 @@ class ResNet32x32(nn.Module):
         self.res16 = nn.Sequential(
             *[ResidualBlock(16, 16, stride=1) for _ in range(n-1)])
         self.res16to32 = ResidualBlock(16, 32, stride=2)
-        self.res33 = nn.Sequential(
+        self.res32 = nn.Sequential(
             *[ResidualBlock(32, 32, stride=1) for _ in range(n-1)])
         self.res32to64 = ResidualBlock(32, 64, stride=2)
         self.res64 = nn.Sequential(
