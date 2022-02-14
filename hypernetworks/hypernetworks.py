@@ -6,6 +6,7 @@ from torch import nn, rand
 
 from hypernetworks.modules import Selector
 from hypernetworks.sparse_hypernetworks import BenesOne, HnetSparse
+from hypernetworks.chunked_hypernetwork import HnetChunked
 
 
 class HyperNetwork(nn.Module):
@@ -94,8 +95,8 @@ class HyperNetwork(nn.Module):
             if idx % nbr_chunks != 0:
                 raise ValueError()
             self.layer_heads = nn.ModuleList(module_list)
-            raise NotImplementedError()
-            # self.core = HnetChnuked(self.latent_size, idx, batch=batch)
+            # raise NotImplementedError()
+            self.core = HnetChunked(self.latent_size, idx, batch=batch, n_chunks=nbr_chunks)
             
         else:
             raise ValueError("hnet should be in linear or MLP")
