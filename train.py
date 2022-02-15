@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
         if model_to_test == "hnet":
             name = "-".join([hnet, input_type, activation, f"bias={bias}", distribution,
-                            connectivity_type, resnet_name, f"stp={step}"])
+                            connectivity_type, resnet_name, f"stp={step}", f"lr={learning_rate:.4f}"])
         else:
             name = "-".join(["Experts", resnet_name])
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
                                  base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step)
         elif model_to_test == "experts":
             model = ConvTaskEnsembleCIFAR(
-                resnet, nbr_task=num_tasks, in_channels=in_channels, n=1, num_classes=num_classes)
+                resnet, nbr_task=num_tasks, in_channels=in_channels, n=n, num_classes=num_classes)
         else:
             raise ValueError()
 
