@@ -35,6 +35,8 @@ if __name__ == "__main__":
                         help='input (default: "task")')
     parser.add_argument('--model', type=str, default="hnet", metavar='m',
                         help='model (default: "hnet") other: "experts"')
+    parser.add_argument('--hnet', type=str, default="sparse", metavar='h',
+                        help='hnet type (default: "sparse") other: "chunked"')
     args = parser.parse_args()
     max_epochs = 100
     batch_size = args.bs # 50
@@ -51,7 +53,7 @@ if __name__ == "__main__":
     lr_reduce = True
 
     in_channels = 3
-    hnet = "sparse"
+    hnet = args.hnet
     input_type = args.input
     latent_size = 64
     n = 5 # Resnet depth parameter
@@ -59,6 +61,7 @@ if __name__ == "__main__":
     distribution = "normal"
     connectivity_type = "linear-decrease"
     connectivity = 3 # not used for linear decrease
+    nbr_chunks = 22
     if args.nonlin == "linear":
         activation = "none"
         bias = False
@@ -80,6 +83,7 @@ if __name__ == "__main__":
     model_to_test = args.model
 
     print(f"learning_rate: {learning_rate}")
+    print(f"hnet_type: {hnet}")
     print(f"input_type: {input_type}")
     print(f"batch_size: {batch_size}")
     print(f"model to test: {model_to_test}")
