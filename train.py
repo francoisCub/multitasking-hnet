@@ -67,13 +67,13 @@ if __name__ == "__main__":
         bias = False
     elif args.nonlin == "affine":
         bias = True
-        raise NotImplementedError()
+        activation = "none"
     elif args.nonlin == "MLPbias":
         bias = True
-        raise NotImplementedError()
+        activation = "prelu"
     elif args.nonlin == "MLPnobias":
         bias = False
-        raise NotImplementedError()
+        activation = "prelu"
     else:
         raise ValueError()
     batch = (input_type == "input" or input_type == "input-task")
