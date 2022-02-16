@@ -75,7 +75,7 @@ class HyperNetwork(nn.Module):
             self.layer_heads = nn.ModuleList(module_list)
             # idx = total_size
             self.core = HnetSparse(self.latent_size, idx, base=base, distribution=distribution,
-                                   connectivity_type=connectivity_type, connectivity=connectivity, sigma=sigma, activation=activation, step=step, bias=bias4sparse)
+                                   connectivity_type=connectivity_type, connectivity=connectivity, sigma=sigma, activation=activation, step=step, bias=bias_sparse)
 
         elif hnet == "benes":
             idx = 0
