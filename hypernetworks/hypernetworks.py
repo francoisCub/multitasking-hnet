@@ -12,7 +12,7 @@ from hypernetworks.chunked_hypernetwork import HnetChunked
 class HyperNetwork(nn.Module):
     def __init__(self, batch_target_model: nn.Module, input_type="learned", hnet="linear", latent_size=32,
                  encoder=None, mode="one_block", variation=False, batch=True, one_vector=False, num_tasks=None, aggregate=False,
-                 distribution="normal", connectivity_type="linear-decrease", connectivity=3, sigma=torch.Tensor([2]), activation="prelu", step=1, base=2, nbr_chunks=8) -> None:
+                 distribution="normal", connectivity_type="linear-decrease", connectivity=3, sigma=torch.Tensor([2]), activation="prelu", step=1, base=2, nbr_chunks=8, bias_sparse=False) -> None:
         super().__init__()
         # Init
         self.target_model = batch_target_model
@@ -75,7 +75,7 @@ class HyperNetwork(nn.Module):
             self.layer_heads = nn.ModuleList(module_list)
             # idx = total_size
             self.core = HnetSparse(self.latent_size, idx, base=base, distribution=distribution,
-                                   connectivity_type=connectivity_type, connectivity=connectivity, sigma=sigma, activation=activation, step=step)
+                                   connectivity_type=connectivity_type, connectivity=connectivity, sigma=sigma, activation=activation, step=step, bias=bias4sparse)
 
         elif hnet == "benes":
             idx = 0

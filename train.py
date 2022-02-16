@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
         if model_to_test == "hnet":
             model = HyperNetwork(batch_target_model=batch_target_model, hnet=hnet, input_type=input_type, encoder=encoder, latent_size=latent_size, batch=batch, sigma=sigma,
-                                 base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, nbr_chunks=nbr_chunks)
+                                 base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, nbr_chunks=nbr_chunks, bias_sparse=bias)
         elif model_to_test == "experts":
             model = ConvTaskEnsembleCIFAR(
                 resnet, nbr_task=num_tasks, in_channels=in_channels, n=n, num_classes=num_classes)
