@@ -93,7 +93,7 @@ class HyperNetwork(nn.Module):
                 module_list.append(Selector(idx, target_size, shape=shape))
                 idx += target_size
             if idx % nbr_chunks != 0:
-                raise ValueError()
+                raise ValueError(f"{idx} is not divisible by {nbr_chunks}")
             self.layer_heads = nn.ModuleList(module_list)
             # raise NotImplementedError()
             self.core = HnetChunked(self.latent_size, idx, batch=batch, n_chunks=nbr_chunks)
