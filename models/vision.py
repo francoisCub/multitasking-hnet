@@ -4,11 +4,17 @@ from torch import nn, unique
 
 
 class ConvMNIST(nn.Module):
-    def __init__(self, dim=10):
+    def __init__(self, dim=10, nonlinear=True):
         super().__init__()
         self.dim = dim
-        self.convs = nn.Sequential(OrderedDict(
-            [(f"conv{i}", nn.Conv2d(1, 1, 5, bias=False)) for i in range(6)]))
+        activation = nn.PReLU if nonlinear else nn.Identity
+        self.convs = nn.Sequential(
+                                nn.Conv2d(1, 1, 5, bias=False), activation(),
+                                nn.Conv2d(1, 1, 5, bias=False), activation(),
+                                nn.Conv2d(1, 1, 5, bias=False), activation(),
+                                nn.Conv2d(1, 1, 5, bias=False), activation(),
+                                nn.Conv2d(1, 1, 5, bias=False), activation(),
+                                nn.Conv2d(1, 1, 5, bias=False), activation())
         self.out = nn.Linear(1 * 4 * 4, dim)
 
     def forward(self, x):
@@ -18,10 +24,10 @@ class ConvMNIST(nn.Module):
 
 
 class ConvTaskEnsembleMNIST(nn.Module):
-    def __init__(self, dim=2, nbr_task=5):
+    def __init__(self, dim=2, nbr_task=5, nonlinear=True):
         super().__init__()
         self.task_models = nn.ModuleList(
-            [ConvMNIST(dim=dim) for _ in range(nbr_task)])
+            [ConvMNIST(dim=dim, nonlinear=nonlinear) for _ in range(nbr_task)])
 
     def forward(self, x, task=None):
         task = unique(task)
