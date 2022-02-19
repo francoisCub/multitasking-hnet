@@ -1,14 +1,14 @@
 from torch import nn, randn_like, cat, stack, permute
+from math import ceil
 
 
 class HnetChunked(nn.Module):
     def __init__(self, latent_size, output_size, batch, n_chunks):
         super().__init__()
-        if output_size % n_chunks != 0:
-            raise ValueError()
         self.latent_size = latent_size
         self.n_chunks = n_chunks
         self.batch = batch
+        self.output_size = output_size
         self.layer_embedding = nn.Linear(self.n_chunks, self.latent_size)
         self.layer_embedding.weight = nn.Parameter(
             randn_like(self.layer_embedding.weight))
@@ -16,7 +16,7 @@ class HnetChunked(nn.Module):
         self.net = nn.Sequential(nn.Linear(2*latent_size, 2*latent_size), nn.ReLU(),
                                  nn.Linear(2*latent_size, 2 *
                                            latent_size), nn.ReLU(),
-                                 nn.Linear(2*latent_size, output_size//n_chunks))
+                                 nn.Linear(2*latent_size, ceil(output_size/n_chunks)))
 
     def forward(self, z):
         # z could be task embedding
@@ -35,4 +35,4 @@ class HnetChunked(nn.Module):
         params = stack([cat([theta for theta in chunks], dim=0)
                         for chunks in chunked_params])
         # chunked_params : b x output_size
-        return params  # [1,0:self.output_size]
+        return params[:,0:self.output_size]
