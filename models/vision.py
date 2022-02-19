@@ -2,6 +2,8 @@ from collections import OrderedDict
 
 from torch import nn, unique
 
+from torchvision.models import resnet18
+
 
 class ConvMNIST(nn.Module):
     def __init__(self, dim=10, nonlinear=True):
@@ -264,3 +266,27 @@ class ResNet9(nn.Module):
         out = self.res2(out) + out
         out = self.classifier(out)
         return out
+
+def replace_bn(m, name):
+    for attr_str in dir(m):
+        target_attr = getattr(m, attr_str)
+        if isinstance(target_attr, nn.BatchNorm2d):
+            setattr(m, attr_str, nn.Identity())
+        elif isinstance(target_attr, nn.Conv2d):
+            setattr(m, attr_str, nn.Conv2d(in_channels=target_attr.in_channels, out_channels=target_attr.out_channels, kernel_size=target_attr.kernel_size, padding=target_attr.padding, bias=True))
+        elif isinstance(target_attr, nn.MaxPool2d):
+            setattr(m, attr_str, nn.Identity())
+    if isinstance(m, nn.Sequential):
+        for i in range(len(m)):
+            if isinstance(m[i], nn.BatchNorm2d):
+                m[i] = nn.Identity()
+    for n, ch in m.named_children():
+        replace_bn(ch, n)
+
+# https://discuss.pytorch.org/t/how-to-replace-a-layer-with-own-custom-variant/43586
+def get_resnet18(in_channels, num_classes, n=None):
+    model = resnet18(pretrained=False)
+    replace_bn(model, "net")
+    model.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    model.fc = nn.Linear(in_features=512, out_features=num_classes)
+    return model
