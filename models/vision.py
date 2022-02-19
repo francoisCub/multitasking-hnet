@@ -273,7 +273,9 @@ def replace_bn(m, name):
         if isinstance(target_attr, nn.BatchNorm2d):
             setattr(m, attr_str, nn.Identity())
         elif isinstance(target_attr, nn.Conv2d):
-            setattr(m, attr_str, nn.Conv2d(in_channels=target_attr.in_channels, out_channels=target_attr.out_channels, kernel_size=target_attr.kernel_size, padding=target_attr.padding, bias=True))
+            setattr(m, attr_str, nn.Conv2d(in_channels=target_attr.in_channels, out_channels=target_attr.out_channels,
+            kernel_size=target_attr.kernel_size, padding=target_attr.padding, bias=True, stride=target_attr.stride,
+            groups=target_attr.groups, padding_mode=target_attr.padding_mode, dilation=target_attr.dilation))
         elif isinstance(target_attr, nn.MaxPool2d):
             setattr(m, attr_str, nn.Identity())
     if isinstance(m, nn.Sequential):
