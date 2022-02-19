@@ -78,9 +78,12 @@ class LightningClassifierTask(LightningModule):
         self.log_dict({f'Test Acc {task.item()}': test_acc})
         nbr_params = compute_nbr_params(self.model)
         if isinstance(self.model, HyperNetwork):
-            connectivity, cmin, cmax, _, _, _ = estimate_connectivity(
-                self.model.core, self.latent_size)
-            self.log_dict({"Connectivity": connectivity, "Cmin": cmin, "Cmax": cmax})
+            try:
+                connectivity, cmin, cmax, _, _, _ = estimate_connectivity(
+                    self.model.core, self.latent_size)
+                self.log_dict({"Connectivity": connectivity, "Cmin": cmin, "Cmax": cmax})
+            except:
+                print("Error in connectivity estimation")
         return self.log_dict({'Test Loss': loss, 'Test Acc': test_acc, "Params": nbr_params})
 
     def validation_step(self, batch, batch_idx):
