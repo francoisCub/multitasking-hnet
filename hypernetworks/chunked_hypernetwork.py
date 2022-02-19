@@ -13,10 +13,13 @@ class HnetChunked(nn.Module):
         self.layer_embedding.weight = nn.Parameter(
             randn_like(self.layer_embedding.weight))
 
-        self.net = nn.Sequential(nn.Linear(2*latent_size, 2*latent_size), nn.ReLU(),
-                                 nn.Linear(2*latent_size, 2 *
-                                           latent_size), nn.ReLU(),
+        self.net = nn.Sequential(nn.Linear(2*latent_size, 2 * latent_size), nn.ReLU(),
+                                 nn.Linear(2*latent_size, 2 * latent_size), nn.ReLU(),
                                  nn.Linear(2*latent_size, ceil(output_size/n_chunks)))
+        
+        nn.init.kaiming_uniform_(self.net[0].weight, nonlinearity='relu')
+        nn.init.kaiming_uniform_(self.net[2].weight, nonlinearity='relu')
+        nn.init.kaiming_uniform_(self.net[4].weight, nonlinearity='relu')
 
     def forward(self, z):
         # z could be task embedding
@@ -27,12 +30,15 @@ class HnetChunked(nn.Module):
         # n x b x l
         new_z = permute(new_z, (1, 0, 2))
         # new_z : b x n x latent_Size
+        print(f"new_z std : {new_z.std()}")
         embeddings = cat(
             [new_z, self.layer_embedding.weight.T.expand(new_z.shape)], dim=2)
+        print(f"embeddings std : {embeddings.std()}")
         # new_z : b x n x 2latent_Size
         chunked_params = self.net(embeddings)
+        print(f"chunked_params std : {chunked_params.std()}")
         # chunked_params : b x n x output_size/n
         params = stack([cat([theta for theta in chunks], dim=0)
                         for chunks in chunked_params])
         # chunked_params : b x output_size
-        return params[:,0:self.output_size]
+        return params
