@@ -1,4 +1,4 @@
-from torch import LongTensor, mean, median, min, nn, ones, sum, no_grad
+from torch import Tensor, LongTensor, mean, median, min, nn, ones, sum, no_grad
 
 
 def compute_nbr_params(model):
@@ -15,11 +15,15 @@ def compute_nbr_params(model):
 
 def estimate_connectivity(hnet, latent_size):
     # when target model is huge and latent size is not small, does not scale
+    # now a memory friendlier version
     with no_grad():
         z = nn.functional.one_hot(LongTensor(
             range(latent_size)), latent_size).float().cuda()
-        out = hnet(z)
-        res = sum(out != 0, dim=1) / out.shape[1]
+        res = []
+        for vector_z in z:
+            out = hnet(vector_z.unsqueeze(0))
+            res.append(sum(out != 0, dim=1) / out.shape[1])
+        res = Tensor(res)
         z = ones(1, latent_size).cuda()
         out = hnet(z)
         coverage = sum(out != 0, dim=1) / out.shape[1]
