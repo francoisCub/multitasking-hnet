@@ -18,12 +18,13 @@ from hypernetworks.utils import estimate_connectivity, compute_nbr_params
 
 class LightningClassifierTask(LightningModule):
     def __init__(self, model, batch_size, latent_size,
-                 learning_rate=0.001, monitor=None, patience=None, use_sgd=False, lr_reduce=False):
+                 learning_rate=0.001, monitor=None, patience=None, use_sgd=False, lr_reduce=False, use_optim="adam"):
         super().__init__()
         self.model = model
         self.latent_size = latent_size
         self.batch_size = batch_size
         self.use_sgd = use_sgd
+        self.use_optim = use_optim
         self.learning_rate = learning_rate
         self.loss_function = nn.CrossEntropyLoss()
         self.monitor = monitor
@@ -52,7 +53,14 @@ class LightningClassifierTask(LightningModule):
                 },
             }
         else:
-            optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
+            if self.use_optim == "adam":
+                optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
+            elif self.use_optim == "radam":
+                optimizer = optim.RAdam(self.parameters(), lr=self.learning_rate)
+            elif self.use_optim == "sgd":
+                optimizer = optim.SGD(self.parameters(), lr=self.learning_rate)
+            else:
+                raise ValueError()
         optimizers = {"optimizer": optimizer}
         if self.lr_reduce:
             optimizers["lr_scheduler"] = {
