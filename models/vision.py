@@ -267,12 +267,15 @@ class ResNet9(nn.Module):
         out = self.classifier(out)
         return out
 
-def replace_bn(m, name):
+def replace_bn(m, replace_conv=False, remove_bn=False):
     for attr_str in dir(m):
         target_attr = getattr(m, attr_str)
         if isinstance(target_attr, nn.BatchNorm2d):
-            setattr(m, attr_str, nn.Identity())
-        elif isinstance(target_attr, nn.Conv2d):
+            if remove_bn:
+                setattr(m, attr_str, nn.Identity())
+            else:
+                setattr(m, attr_str, nn.BatchNorm2d(num_features=target_attr.num_features, eps=target_attr.eps, momentum=1.0, affine=target_attr.affine, track_running_stats=False))
+        elif replace_conv and isinstance(target_attr, nn.Conv2d):
             setattr(m, attr_str, nn.Conv2d(in_channels=target_attr.in_channels, out_channels=target_attr.out_channels,
             kernel_size=target_attr.kernel_size, padding=target_attr.padding, bias=True, stride=target_attr.stride,
             groups=target_attr.groups, padding_mode=target_attr.padding_mode, dilation=target_attr.dilation))
@@ -283,12 +286,13 @@ def replace_bn(m, name):
             if isinstance(m[i], nn.BatchNorm2d):
                 m[i] = nn.Identity()
     for n, ch in m.named_children():
-        replace_bn(ch, n)
+        replace_bn(ch, replace_conv, remove_bn)
 
 # https://discuss.pytorch.org/t/how-to-replace-a-layer-with-own-custom-variant/43586
 def get_resnet18(in_channels, num_classes, n=None):
     model = resnet18(pretrained=False)
-    replace_bn(model, "net")
+    replace_bn(model,replace_conv=False, remove_bn=False)
     model.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    model.maxpool = nn.Identity()
     model.fc = nn.Linear(in_features=512, out_features=num_classes)
     return model
