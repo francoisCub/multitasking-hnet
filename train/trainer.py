@@ -18,7 +18,7 @@ from hypernetworks.utils import estimate_connectivity, compute_nbr_params
 
 class LightningClassifierTask(LightningModule):
     def __init__(self, model, batch_size, latent_size,
-                 learning_rate=0.001, monitor=None, patience=None, use_sgd=False, lr_reduce=False, use_optim="adam", **models_params):
+                 learning_rate=0.001, monitor=None, mode=None, patience=None, use_sgd=False, lr_reduce=False, use_optim="adam", lr_reduce_factor=10, **models_params):
         super().__init__()
         self.save_hyperparameters(ignore=["model"])
         self.model = model
@@ -29,8 +29,10 @@ class LightningClassifierTask(LightningModule):
         self.learning_rate = learning_rate
         self.loss_function = nn.CrossEntropyLoss()
         self.monitor = monitor
+        self.mode = mode
         self.patience = patience
         self.lr_reduce = lr_reduce
+        self.lr_reduce_factor = lr_reduce_factor
 
     def forward(self, x: torch.Tensor, task=None):
         return self.model(x, task)
@@ -49,8 +51,9 @@ class LightningClassifierTask(LightningModule):
             return {
                 "optimizer": optimizer,
                 "lr_scheduler": {
-                    "scheduler": ReduceLROnPlateau(optimizer, patience=self.patience//2, factor=0.1),
+                    "scheduler": ReduceLROnPlateau(optimizer, patience=self.patience//2, factor=self.lr_reduce_factor),
                     "monitor": self.monitor,
+                    "mode": self.mode,
                 },
             }
         else:
@@ -65,8 +68,9 @@ class LightningClassifierTask(LightningModule):
         optimizers = {"optimizer": optimizer}
         if self.lr_reduce:
             optimizers["lr_scheduler"] = {
-                    "scheduler": ReduceLROnPlateau(optimizer, patience=self.patience//2, factor=0.1),
+                    "scheduler": ReduceLROnPlateau(optimizer, patience=self.patience//2, factor=self.lr_reduce_factor),
                     "monitor": self.monitor,
+                    "mode": self.mode,
                 }
         return optimizers
 
