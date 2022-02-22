@@ -51,9 +51,8 @@ class LightningClassifierTask(LightningModule):
             return {
                 "optimizer": optimizer,
                 "lr_scheduler": {
-                    "scheduler": ReduceLROnPlateau(optimizer, patience=self.patience//2, factor=self.lr_reduce_factor),
+                    "scheduler": ReduceLROnPlateau(optimizer, patience=self.patience//2, factor=self.lr_reduce_factor, mode=self.mode),
                     "monitor": self.monitor,
-                    "mode": self.mode,
                 },
             }
         else:
@@ -68,9 +67,8 @@ class LightningClassifierTask(LightningModule):
         optimizers = {"optimizer": optimizer}
         if self.lr_reduce:
             optimizers["lr_scheduler"] = {
-                    "scheduler": ReduceLROnPlateau(optimizer, patience=self.patience//2, factor=self.lr_reduce_factor),
+                    "scheduler": ReduceLROnPlateau(optimizer, patience=self.patience//2, factor=self.lr_reduce_factor, mode=self.mode),
                     "monitor": self.monitor,
-                    "mode": self.mode,
                 }
         return optimizers
 
