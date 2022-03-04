@@ -111,6 +111,7 @@ class HnetSparse(nn.Module):
         current_size = self.output_size
         if connectivity_type in ["linear-decrease", "exponential-decrease"]:
             self.connectivity = 1
+            connectivity_float = 1.0
         first = True
         while(self.latent_size < current_size / self.base):
             new_connectivity, new_sigma, first = sparse_helper(
@@ -126,6 +127,9 @@ class HnetSparse(nn.Module):
             current_size = int(current_size / self.base)
             if connectivity_type == "linear-decrease":
                 self.connectivity += step
+            if connectivity_type == "exponential-decrease":
+                connectivity_float *= 1.5
+                self.connectivity = math.ceil(connectivity_float)
             # self.sigma *= 2
         new_connectivity, new_sigma, first = sparse_helper(
             self.connectivity, self.distribution, self.sigma, first)
