@@ -87,7 +87,8 @@ class LightningClassifierTask(LightningModule):
                 self.log_dict({"Connectivity": connectivity, "Cmin": cmin, "Cmax": cmax})
             except:
                 print("Error in connectivity estimation")
-        return self.log_dict({'Test Loss': loss, 'Test Acc': test_acc, "Params": nbr_params})
+        entropy_estimate = entropy(y_hat)
+        return self.log_dict({'Test Loss': loss, 'Test Acc': test_acc, "Params": nbr_params, 'Entropy': entropy_estimate.item()})
 
     def validation_step(self, batch, batch_idx):
         x, y, classes, task = batch
