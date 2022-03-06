@@ -12,7 +12,7 @@ from hypernetworks.chunked_hypernetwork import HnetChunked
 class HyperNetwork(nn.Module):
     def __init__(self, batch_target_model: nn.Module, input_type="learned", hnet="linear", latent_size=32,
                  encoder=None, mode="one_block", variation=False, batch=True, one_vector=False, num_tasks=None, aggregate=False,
-                 distribution="normal", connectivity_type="linear-decrease", connectivity=3, sigma=torch.Tensor([2]), activation="prelu", step=1, base=2, nbr_chunks=8, bias_sparse=False) -> None:
+                 distribution="normal", connectivity_type="linear-decrease", connectivity=3, sigma=torch.Tensor([2]), activation="prelu", step=1, base=2, nbr_chunks=8, bias_sparse=False, normalize=True) -> None:
         super().__init__()
         # Init
         self.target_model = batch_target_model
@@ -52,8 +52,11 @@ class HyperNetwork(nn.Module):
             self.encoder = encoder  # get_encoder('encoder-resnet')
         else:
             raise ValueError()
-        self.layerNorm = nn.LayerNorm(
+        if normalize:
+            self.layerNorm = nn.LayerNorm(
             self.latent_size, elementwise_affine=False)
+        else:
+            self.layerNorm = nn.Identity()
 
         # Heads
         if hnet == "linear":
