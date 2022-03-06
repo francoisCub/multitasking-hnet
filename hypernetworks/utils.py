@@ -1,5 +1,10 @@
-from torch import Tensor, LongTensor, mean, median, min, nn, ones, sum, no_grad
+from torch import Tensor, LongTensor, mean, median, min, nn, ones, sum, no_grad, exp
 
+
+def entropy(input):
+    log_p = nn.functional.log_softmax(input, dim=1)
+    p = exp(log_p)
+    return -sum(p*log_p, dim=1).mean()
 
 def compute_nbr_params(model):
     total_size = 0

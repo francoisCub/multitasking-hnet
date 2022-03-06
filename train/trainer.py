@@ -13,7 +13,7 @@ from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 from torch import nn, optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from hypernetworks.hypernetworks import HyperNetwork
-from hypernetworks.utils import estimate_connectivity, compute_nbr_params
+from hypernetworks.utils import estimate_connectivity, compute_nbr_params, entropy
 
 
 class LightningClassifierTask(LightningModule):
@@ -95,4 +95,5 @@ class LightningClassifierTask(LightningModule):
         loss = self.loss_function(y_hat, y)
         labels_hat = torch.argmax(y_hat, dim=1)
         val_acc = torch.sum(labels_hat == y).item() / (len(y) * 1.0)
-        return self.log_dict({'Val Loss': loss, 'Val Acc': val_acc, f"Val Acc {task.item()}": val_acc})
+        entropy_estimate = entropy(y_hat)
+        return self.log_dict({'Val Loss': loss, 'Val Acc': val_acc, f"Val Acc {task.item()}": val_acc, 'Entropy': entropy_estimate.item()})
