@@ -6,7 +6,7 @@ from torch_sparse import coalesce, spmm
 
 
 class SparseLinear(nn.Module):
-    def __init__(self, in_size, out_size, connectivity, distribution="uniform", sigma=torch.Tensor([1.0]), bias=False):
+    def __init__(self, in_size, out_size, connectivity, distribution="uniform", sigma=torch.Tensor([1.0]), bias=False, activation_coeff=1.0):
         super().__init__()
         self.in_size, self.out_size = in_size, out_size
         indices_out = torch.LongTensor(list(range(out_size)) * connectivity)
@@ -44,7 +44,7 @@ class SparseLinear(nn.Module):
             torch.long), values, out_size, in_size, op="add")
         self.register_buffer('indices', indices) #nn.Parameter(indices.type(torch.float))
         values = (torch.rand_like(values) - 0.5) * 2 * \
-            math.sqrt(3 / (len(values)/out_size))
+            math.sqrt(6 / ((1+activation_coeff**2)*(len(values)/out_size)))
         self.values = nn.Parameter(values)
 
         self.bias = bias
@@ -73,6 +73,17 @@ def sparse_helper(connectivity, distribution, sigma, first):
         new_connectivity = 4 if distribution == "mixed" else connectivity
     return new_connectivity, new_sigma, first
 
+def get_activation_coeff(activation):
+    if activation is None:
+        return 1.0
+    elif activation == "prelu":
+        return 0.25
+    elif activation == "leaky":
+        return 0.01
+    elif activation == "relu":
+        return 0.0
+    else:
+        raise ValueError()
 
 class HnetSparse(nn.Module):
     def __init__(self, latent_size, output_size, base=None, num_layers=None,
@@ -114,17 +125,18 @@ class HnetSparse(nn.Module):
             self.connectivity = 1
             connectivity_float = 1.0
         first = True
+        activation_coeff = get_activation_coeff(activation)
         while(self.latent_size < current_size / self.base):
             new_connectivity, new_sigma, first = sparse_helper(
                 self.connectivity, self.distribution, self.sigma, first)
             layer_list.append(SparseLinear(int(current_size / self.base),
-                              current_size, new_connectivity, self.distribution, new_sigma, bias))
+                              current_size, new_connectivity, self.distribution, new_sigma, bias, activation_coeff=activation_coeff))
             if activation == "leaky":
-                layer_list.append(nn.LeakyReLU())
+                layer_list.append(nn.LeakyReLU(negative_slope=activation_coeff))
             elif activation == "relu":
                 layer_list.append(nn.ReLU())
             elif activation == "prelu":
-                layer_list.append(nn.PReLU(init=1.0))
+                layer_list.append(nn.PReLU(init=activation_coeff))
             current_size = int(current_size / self.base)
             if connectivity_type == "linear-decrease":
                 self.connectivity += step
