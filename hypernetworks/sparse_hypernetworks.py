@@ -37,7 +37,7 @@ class SparseLinear(nn.Module):
                     "Mixed distribution not implemented for connectivity other than 1 or 4")
         else:
             raise ValueError("Distribution should be uniform or normal")
-        torch.clamp(indices_in, min=0, max=in_size-1)
+        indices_in = torch.clamp(indices_in, min=0, max=in_size-1)
         indices = torch.stack([indices_out, indices_in])
         values = torch.randn(out_size * connectivity)
         indices, values = coalesce(indices.type(
@@ -75,6 +75,8 @@ def sparse_helper(connectivity, distribution, sigma, first):
 
 def get_activation_coeff(activation):
     if activation is None:
+        return 1.0
+    elif activation == "none":
         return 1.0
     elif activation == "prelu":
         return 0.25
