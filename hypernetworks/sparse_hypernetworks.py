@@ -11,23 +11,23 @@ class SparseLinear(nn.Module):
         self.in_size, self.out_size = in_size, out_size
         indices_out = torch.LongTensor(list(range(out_size)) * connectivity)
         if distribution == "uniform":
-            indices_in = (torch.randperm(out_size*connectivity) % in_size)
+            indices_in = torch.randperm(out_size*connectivity)
         elif distribution == "normal":
             indices_in = torch.round(torch.normal(torch.round(
-                indices_out / (out_size / in_size)), sigma)) % in_size
+                indices_out / (out_size / in_size)), sigma))
         elif distribution == "mixed":
             if connectivity == 1:
                 indices_in = torch.round(
-                    indices_out / (out_size / in_size)) % in_size
+                    indices_out / (out_size / in_size))
             elif connectivity == 4:
                 indices_in_minus_one = (torch.round(
-                    indices_out / (out_size / in_size))-1) % in_size
+                    indices_out / (out_size / in_size))-1)
                 indices_in_aligned = (torch.round(
-                    indices_out / (out_size / in_size))-1) % in_size
+                    indices_out / (out_size / in_size))-1)
                 indices_in_plus_one = (torch.round(
-                    indices_out / (out_size / in_size))+1) % in_size
+                    indices_out / (out_size / in_size))+1)
                 indices_in = torch.round(torch.normal(torch.round(
-                    indices_out / (out_size / in_size)), sigma)) % in_size
+                    indices_out / (out_size / in_size)), sigma))
                 indices_in[:out_size] = indices_in_minus_one[:out_size]
                 indices_in[out_size:2*out_size] = indices_in_aligned[:out_size]
                 indices_in[2*out_size:3 *
@@ -37,6 +37,7 @@ class SparseLinear(nn.Module):
                     "Mixed distribution not implemented for connectivity other than 1 or 4")
         else:
             raise ValueError("Distribution should be uniform or normal")
+        torch.clamp(indices_in, min=0, max=in_size-1)
         indices = torch.stack([indices_out, indices_in])
         values = torch.randn(out_size * connectivity)
         indices, values = coalesce(indices.type(
