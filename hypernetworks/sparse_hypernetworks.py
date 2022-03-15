@@ -11,7 +11,7 @@ class SparseLinear(nn.Module):
         self.in_size, self.out_size = in_size, out_size
         indices_out = torch.LongTensor(list(range(out_size)) * connectivity)
         if distribution == "uniform":
-            indices_in = torch.randperm(out_size*connectivity)
+            indices_in = torch.randperm(out_size*connectivity) % in_size
         elif distribution == "normal":
             indices_in = torch.round(torch.normal(torch.round(
                 indices_out / (out_size / in_size)), sigma))
@@ -23,7 +23,7 @@ class SparseLinear(nn.Module):
                 indices_in_minus_one = (torch.round(
                     indices_out / (out_size / in_size))-1)
                 indices_in_aligned = (torch.round(
-                    indices_out / (out_size / in_size))-1)
+                    indices_out / (out_size / in_size))-0)
                 indices_in_plus_one = (torch.round(
                     indices_out / (out_size / in_size))+1)
                 indices_in = torch.round(torch.normal(torch.round(
