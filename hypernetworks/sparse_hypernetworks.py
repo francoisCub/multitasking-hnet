@@ -11,6 +11,8 @@ class SparseLinear(nn.Module):
         self.in_size, self.out_size = in_size, out_size
         indices_out = torch.LongTensor(list(range(out_size)) * connectivity)
         if distribution == "uniform":
+            indices_in = torch.randint(in_size, (out_size*connectivity,))
+        elif distribution == "randperm":
             indices_in = torch.randperm(out_size*connectivity) % in_size
         elif distribution == "normal":
             indices_in = torch.round(torch.normal(torch.round(
@@ -38,6 +40,7 @@ class SparseLinear(nn.Module):
         else:
             raise ValueError("Distribution should be uniform or normal")
         indices_in = torch.clamp(indices_in, min=0, max=in_size-1)
+        # indices_in = indices_in % in_size
         indices = torch.stack([indices_out, indices_in])
         values = torch.randn(out_size * connectivity)
         indices, values = coalesce(indices.type(
@@ -110,9 +113,9 @@ class HnetSparse(nn.Module):
                 self.base = base
                 self.num_layers = math.ceil(
                     math.log(self.output_size / self.latent_size))
-        if distribution not in ["uniform", "normal", "mixed"]:
+        if distribution not in ["uniform", "normal", "mixed", "randperm"]:
             raise ValueError(
-                'distribution not in ["uniform", "normal", "mixed"]')
+                'distribution not in ["uniform", "normal", "mixed", "randperm"]')
         self.distribution = distribution
         if connectivity_type not in ["linear-decrease", "exponential-decrease", "constant"]:
             raise ValueError(
