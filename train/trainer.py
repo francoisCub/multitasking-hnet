@@ -18,7 +18,7 @@ from hypernetworks.utils import estimate_connectivity, compute_nbr_params, entro
 
 class LightningClassifierTask(LightningModule):
     def __init__(self, model, batch_size, latent_size,
-                 learning_rate=0.001, monitor=None, mode=None, patience=None, use_sgd=False, lr_reduce=False, use_optim="adam", lr_reduce_factor=10, **models_params):
+                 learning_rate=0.001, monitor=None, mode=None, patience=None, use_sgd=False, lr_reduce=False, use_optim="adam", lr_reduce_factor=0.1, **models_params):
         super().__init__()
         self.save_hyperparameters(ignore=["model"])
         self.model = model
