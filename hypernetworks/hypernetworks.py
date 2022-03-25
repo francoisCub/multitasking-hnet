@@ -57,6 +57,15 @@ class HyperNetwork(nn.Module):
             self.latent_size, elementwise_affine=False)
         else:
             self.layerNorm = nn.Identity()
+        
+        # Layers heads
+        idx = 0
+        module_list = []
+        for _, shape, target_size in self.target_model.get_params_info():
+            module_list.append(Selector(idx, target_size, shape=shape))
+            idx += target_size
+        total_target_size = idx
+        self.layer_heads = nn.ModuleList(module_list)
 
         # Heads
         if hnet == "linear":
@@ -70,34 +79,16 @@ class HyperNetwork(nn.Module):
             self.layer_heads = nn.ModuleList([nn.Linear(mid_size, target_size) for (
                 _, _, target_size) in self.target_model.get_params_info()])
         elif hnet == "sparse":
-            idx = 0
-            module_list = []
-            for _, shape, target_size in self.target_model.get_params_info():
-                module_list.append(Selector(idx, target_size, shape=shape))
-                idx += target_size
-            self.layer_heads = nn.ModuleList(module_list)
             # idx = total_size
-            self.core = HnetSparse(self.latent_size, idx, base=base, distribution=distribution,
+            self.core = HnetSparse(self.latent_size, total_target_size, base=base, distribution=distribution,
                                    connectivity_type=connectivity_type, connectivity=connectivity, sigma=sigma, activation=activation, step=step, bias=bias_sparse)
 
         elif hnet == "benes":
-            idx = 0
-            module_list = []
-            for _, shape, target_size in self.target_model.get_params_info():
-                module_list.append(Selector(idx, target_size, shape=shape))
-                idx += target_size
-            self.layer_heads = nn.ModuleList(module_list)
-            self.core = BenesOne(self.latent_size, idx, full=True)
+            self.core = BenesOne(self.latent_size, total_target_size, full=True)
         
         elif hnet == "chunked":
-            idx = 0
-            module_list = []
-            for _, shape, target_size in self.target_model.get_params_info():
-                module_list.append(Selector(idx, target_size, shape=shape))
-                idx += target_size
-            self.layer_heads = nn.ModuleList(module_list)
             # raise NotImplementedError()
-            self.core = HnetChunked(self.latent_size, idx, batch=batch, n_chunks=nbr_chunks)
+            self.core = HnetChunked(self.latent_size, total_target_size, batch=batch, n_chunks=nbr_chunks)
             
         else:
             raise ValueError("hnet should be in linear or MLP")
