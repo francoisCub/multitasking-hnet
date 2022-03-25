@@ -152,6 +152,11 @@ if __name__ == "__main__":
         num_tasks = n_classes // num_class_per_task
         data = LightningCifar(batch_size=batch_size, num_class_per_task=num_class_per_task,
                               n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks)
+    elif args.data == "cifar10":
+        n_classes = 10
+        num_tasks = n_classes // num_class_per_task
+        data = LightningCifar(batch_size=batch_size, num_class_per_task=num_class_per_task,
+                              n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks)
     else:
         raise NotImplementedError("Only cifar100 is implemented")
 
@@ -183,7 +188,7 @@ if __name__ == "__main__":
                                  base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize)
         elif model_to_test == "experts":
             # TODO adapt for other dataset and Target network
-            if args.data == "cifar100":
+            if args.data == "cifar100" or args.data == "cifar10":
                 model = ConvTaskEnsembleCIFAR(
                 resnet, nbr_task=num_tasks, in_channels=in_channels, n=n, num_classes=num_classes)
             else:
@@ -209,7 +214,7 @@ if __name__ == "__main__":
                                            latent_size=latent_size, learning_rate=learning_rate, use_sgd=use_sgd, lr_reduce=lr_reduce, use_optim=use_optim,
                                            batch_target_model=batch_target_model.__class__.__name__, hnet=hnet, input_type=input_type, encoder=encoder.__class__.__name__, batch=batch, sigma=sigma.item(), # next model params
                                            base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step,
-                                           nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, name=args.name, resnet_name=resnet_name, num_class_per_task=num_class_per_task, data=args.data, target_name=args.target)
+                                           nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, name=args.name, resnet_name=resnet_name, num_class_per_task=num_class_per_task, data=args.data, target_name=args.target, trials=args.trials)
 
         trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=False, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
