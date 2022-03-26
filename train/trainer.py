@@ -13,7 +13,7 @@ from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 from torch import nn, optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from hypernetworks.hypernetworks import HyperNetwork
-from hypernetworks.utils import estimate_connectivity, compute_nbr_params, entropy
+from hypernetworks.utils import estimate_connectivity, compute_nbr_params, entropy, estimate_target_sparsity
 
 
 class LightningClassifierTask(LightningModule):
@@ -94,6 +94,12 @@ class LightningClassifierTask(LightningModule):
                 self.log_dict({"Connectivity": connectivity, "Cmin": cmin, "Cmax": cmax})
             except BaseException as err:
                 print(f"Error in connectivity estimation: {err}")
+            estimated_sparsity = estimate_target_sparsity(self.model, self.latent_size, type="hnet")
+
+        else:
+            estimated_sparsity = estimate_target_sparsity(self.model, None, type="experts")
+        self.log_dict({"Estimated target sparsity": estimated_sparsity})
+
         self.metrics_estimated = True
         return
 

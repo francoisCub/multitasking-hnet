@@ -1,5 +1,6 @@
-from torch import Tensor, LongTensor, mean, median, min, nn, ones, sum, no_grad, exp
+from torch import Tensor, LongTensor, mean, median, min, nn, ones, sum, no_grad, exp, randn
 import torch.nn.utils.prune as prune
+from torch.nn.utils import parameters_to_vector
 
 
 def entropy(input):
@@ -35,6 +36,35 @@ def estimate_connectivity(hnet, latent_size):
         coverage = sum(out != 0, dim=1) / out.shape[1]
         return mean(res), min(res), max(res), median(res), res, mean(coverage)
 
+def estimate_target_sparsity(model, latent_size, type, layers_type=None, device="cuda"):
+    with no_grad():
+        if type == "hnet":
+            z = randn(1, latent_size, device=device)
+            out = model.forward_hnet(z)
+            num_zeros = 0
+            num_elements = 0
+            for name, param in out.items():
+                num_zeros += sum(param==0).item()
+                num_elements += param.nelement()
+            return num_zeros / num_elements
+        elif type == "experts":
+            param_vector = parameters_to_vector(model.parameters())
+            num_zeros = 0
+            num_elements = 0
+
+            for module in model.modules():
+                for buffer_name, buffer in module.named_buffers():
+                    if "weight_mask" in buffer_name:
+                        num_zeros += sum(buffer == 0).item()
+                        num_elements += buffer.nelement()
+                    if "bias_mask" in buffer_name:
+                        num_zeros += sum(buffer == 0).item()
+                        num_elements += buffer.nelement()
+            return num_zeros / num_elements
+        else:
+            raise ValueError("hnet or experts")
+    
+
 # delete_param and set_param from https://discuss.pytorch.org/t/how-does-one-have-the-parameters-of-a-model-not-be-leafs/70076/10
 
 
@@ -67,5 +97,6 @@ def sparsify_resnet(model, sparsity):
     all_param,
     pruning_method=prune.RandomUnstructured,
     amount=sparsity,
-)
+)   
+
     return model
