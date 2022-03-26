@@ -1,4 +1,5 @@
 from torch import Tensor, LongTensor, mean, median, min, nn, ones, sum, no_grad, exp
+import torch.nn.utils.prune as prune
 
 
 def entropy(input):
@@ -55,3 +56,16 @@ def get_param(module: nn.Module, module_list):
         return getattr(module, module_list[0])
     else:
         return get_param(getattr(module, module_list[0]), module_list[1:])
+
+def sparsify_resnet(model, sparsity):
+    all_param = []
+    for module in model.modules():
+        if isinstance(module, nn.Linear) or isinstance(module, nn.Conv2d) or isinstance(module, nn.BatchNorm2d):
+            for name, param in module.named_parameters():
+                all_param.append((module, name.split('.')[-1]))
+    prune.global_unstructured(
+    all_param,
+    pruning_method=prune.RandomUnstructured,
+    amount=sparsity,
+)
+    return model
