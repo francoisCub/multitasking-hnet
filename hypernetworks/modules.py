@@ -28,9 +28,10 @@ class Sparsify(Module):
         super().__init__()
         self.size = size
         if mask_vector is None:
-            self.mask_vector = global_mask_vector[self.start:self.end]
+            mask_vector = global_mask_vector[start:start+size].float()
         else:
-            self.mask_vector = mask_vector
+            mask_vector = mask_vector.float()
+        self.register_buffer("mask_vector", mask_vector)
         self.actual_sparsity = self.mask_vector.mean().item()
 
     def forward(self, x):
