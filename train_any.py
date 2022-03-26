@@ -8,9 +8,11 @@ from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 
 from data.cifar import LightningCifar
 from hypernetworks.hypernetworks import HyperNetwork
+from hypernetworks.modules import get_sparsify
 from hypernetworks.target_models import BatchTargetModel, TargetModel
 from models.vision import ConvTaskEnsembleCIFAR, ResNet, ResNet32x32, ResNet9, SmallResNet, get_resnet18
 from train.trainer import LightningClassifierTask
+from hypernetworks.utils import compute_nbr_params, sparsify_resnet
 
 def get_comparison_name(**kwargs):
     return "-".join([f"eid={kwargs['exp_id']}", f"d={kwargs['distribution']}", f"c={kwargs['connectivity_type']}", f"lin={kwargs['nonlin']}", f"lr={kwargs['lr']}", f"n={kwargs['normalize']}"])
@@ -186,6 +188,12 @@ if __name__ == "__main__":
                              num_classes=latent_size, n=1)
         else:
             encoder = None
+        
+        # Post processing
+        if 0 < target_sparsity < 1:
+            post_processing = get_sparsify(total_size=compute_nbr_params(target_model), sparsity=target_sparsity)
+        else:
+            post_processing =None
 
         if batch:
             batch_target_model = BatchTargetModel(
@@ -195,7 +203,7 @@ if __name__ == "__main__":
 
         if model_to_test == "hnet":
             model = HyperNetwork(batch_target_model=batch_target_model, hnet=hnet, input_type=input_type, encoder=encoder, latent_size=latent_size, batch=batch, sigma=sigma,
-                                 base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize)
+                                 base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, post_processing=post_processing)
         elif model_to_test == "experts":
             # TODO adapt for other dataset and Target network
             if args.data == "cifar100" or args.data == "cifar10":
@@ -203,6 +211,8 @@ if __name__ == "__main__":
                 resnet, nbr_task=num_tasks, in_channels=in_channels, n=n, num_classes=num_classes)
             else:
                 raise NotImplementedError("Only cifar100")
+            if target_sparsity > 0:
+                model = sparsify_resnet(model)
         else:
             raise ValueError()
 
@@ -224,7 +234,7 @@ if __name__ == "__main__":
                                            latent_size=latent_size, learning_rate=learning_rate, use_sgd=use_sgd, lr_reduce=lr_reduce, use_optim=use_optim,
                                            batch_target_model=batch_target_model.__class__.__name__, hnet=hnet, input_type=input_type, encoder=encoder.__class__.__name__, batch=batch, sigma=sigma.item(), # next model params
                                            base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step,
-                                           nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, name=args.name, resnet_name=resnet_name, num_class_per_task=num_class_per_task, data=args.data, target_name=args.target, trials=args.trials)
+                                           nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, name=args.name, resnet_name=resnet_name, num_class_per_task=num_class_per_task, data=args.data, target_name=args.target, trials=args.trials, target_sparsity=target_sparsity)
 
         trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=False, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
