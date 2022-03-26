@@ -33,6 +33,7 @@ class LightningClassifierTask(LightningModule):
         self.patience = patience
         self.lr_reduce = lr_reduce
         self.lr_reduce_factor = lr_reduce_factor
+        self.metrics_estimated = False
 
     def forward(self, x: torch.Tensor, task=None):
         return self.model(x, task)
@@ -80,15 +81,21 @@ class LightningClassifierTask(LightningModule):
         test_acc = torch.sum(labels_hat == y).item() / (len(y) * 1.0)
         self.log_dict({f'Test Acc {task.item()}': test_acc})
         nbr_params = compute_nbr_params(self.model)
+        entropy_estimate = entropy(y_hat)
+        if not self.metrics_estimated:
+            self.estimate_metrics()
+        return self.log_dict({'Test Loss': loss, 'Test Acc': test_acc, "Params": nbr_params, 'Entropy': entropy_estimate.item()})
+    
+    def estimate_metrics(self) -> None:
         if isinstance(self.model, HyperNetwork):
             try:
                 connectivity, cmin, cmax, _, _, _ = estimate_connectivity(
                     self.model.core, self.latent_size)
                 self.log_dict({"Connectivity": connectivity, "Cmin": cmin, "Cmax": cmax})
-            except:
-                print("Error in connectivity estimation")
-        entropy_estimate = entropy(y_hat)
-        return self.log_dict({'Test Loss': loss, 'Test Acc': test_acc, "Params": nbr_params, 'Entropy': entropy_estimate.item()})
+            except BaseException as err:
+                print(f"Error in connectivity estimation: {err}")
+        self.metrics_estimated = True
+        return
 
     def validation_step(self, batch, batch_idx):
         x, y, classes, task = batch
