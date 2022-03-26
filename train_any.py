@@ -23,7 +23,7 @@ def get_comparison_name2(**kwargs):
 
 def get_sparsify_name(model_to_test, **kwargs):
     if model_to_test == "hnet":
-        return "-".join([kwargs['hnet'], kwargs['distribution'], f"optim={kwargs['use_optim']}", f"lin={kwargs['args.nonlin']}",
+        return "-".join([kwargs['hnet'], kwargs['distribution'], f"optim={kwargs['use_optim']}", f"lin={kwargs['nonlin']}",
                            kwargs['connectivity_type'], f"lr={kwargs['learning_rate']:.4f}", f"lr_red={kwargs['lr_reduce']}_{kwargs['lr_reduce_factor']}", f"norm={kwargs['normalize']}", f"eid={kwargs['exp_id']}", f"tg_sparsity={kwargs['target_sparsity']}"])
     else:
         return "-".join(["Experts", f"optim={kwargs['use_optim']}", f"lr={kwargs['learning_rate']:.4f}", f"lr_red={kwargs['lr_reduce']}_{kwargs['lr_reduce_factor']}", f"eid={kwargs['exp_id']}", f"norm={kwargs['normalize']}", f"tg_sp={kwargs['target_sparsity']}"])
