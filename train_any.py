@@ -212,7 +212,7 @@ if __name__ == "__main__":
             else:
                 raise NotImplementedError("Only cifar100")
             if target_sparsity > 0:
-                model = sparsify_resnet(model)
+                model = sparsify_resnet(model, target_sparsity)
         else:
             raise ValueError()
 
