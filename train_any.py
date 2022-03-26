@@ -15,6 +15,17 @@ from train.trainer import LightningClassifierTask
 def get_comparison_name(**kwargs):
     return "-".join([f"eid={kwargs['exp_id']}", f"d={kwargs['distribution']}", f"c={kwargs['connectivity_type']}", f"lin={kwargs['nonlin']}", f"lr={kwargs['lr']}", f"n={kwargs['normalize']}"])
 
+def get_comparison_name2(**kwargs):
+    return "-".join([kwargs['hnet'], kwargs['distribution'], f"optim={kwargs['use_optim']}", f"lin={kwargs['args.nonlin']}",
+                           kwargs['connectivity_type'], f"lr={kwargs['learning_rate']:.4f}", f"lr_red={kwargs['lr_reduce']}_{kwargs['lr_reduce_factor']}", f"norm={kwargs['normalize']}", f"eid={kwargs['exp_id']}"])
+
+def get_sparsify_name(model_to_test, **kwargs):
+    if model_to_test == "hnet":
+        return "-".join([kwargs['hnet'], kwargs['distribution'], f"optim={kwargs['use_optim']}", f"lin={kwargs['args.nonlin']}",
+                           kwargs['connectivity_type'], f"lr={kwargs['learning_rate']:.4f}", f"lr_red={kwargs['lr_reduce']}_{kwargs['lr_reduce_factor']}", f"norm={kwargs['normalize']}", f"eid={kwargs['exp_id']}", f"tg_sparsity={kwargs['target_sparsity']}"])
+    else:
+        return "-".join(["Experts", f"optim={kwargs['use_optim']}", f"lr={kwargs['learning_rate']:.4f}", f"lr_red={kwargs['lr_reduce']}_{kwargs['lr_reduce_factor']}", f"eid={kwargs['exp_id']}", f"norm={kwargs['normalize']}", f"tg_sp={kwargs['target_sparsity']}"])
+
 def get_target_net(name):
     networks = {"ResNet32x32": ResNet32x32,
     "ResNet18": get_resnet18}
@@ -38,6 +49,8 @@ if __name__ == "__main__":
 
     parser.add_argument('--sigma', type=float, default=-1.0, metavar='s',
                         help='sigma (default: latent_size/4)')
+    parser.add_argument('--target_sparsity', type=float, default=0.0, metavar='s',
+                        help='target network uniform sparsity (default: 0.0, no sparsity)')
     parser.add_argument('--bs', type=int, default=50, metavar='b',
                         help='batch size (default: 50)')
     
@@ -124,6 +137,8 @@ if __name__ == "__main__":
         sigma =  torch.Tensor([args.sigma])
     step = 1
 
+    target_sparsity = args.target_sparsity
+
     model_to_test = args.model
 
     print(f"learning_rate: {learning_rate}")
@@ -162,12 +177,7 @@ if __name__ == "__main__":
 
     for version in range(args.trials):
 
-        if model_to_test == "hnet":
-            name = "-".join([hnet, distribution, f"optim={use_optim}", f"lin={args.nonlin}",
-                            connectivity_type, f"lr={learning_rate:.4f}", f"lr_red={lr_reduce}_{lr_reduce_factor}", f"norm={normalize}", f"eid={exp_id}"])
-        else:
-            name = "-".join(["Experts", f"lr={learning_rate:.4f}", f"lr_red={lr_reduce}_{lr_reduce_factor}", f"eid={exp_id}", f"p={patience}", f"norm={normalize}"])
-
+        name = get_sparsify_name(model_to_test, hnet=hnet, distribution=distribution, use_optim=use_optim, nonlin=args.nonlin, connectivity_type=connectivity_type, learning_rate=learning_rate, lr_reduce=lr_reduce, lr_reduce_factor=lr_reduce_factor, exp_id=exp_id, patience=patience, normalize=normalize, target_sparsity=target_sparsity)
 
         target_model = resnet(
             in_channels=in_channels, num_classes=num_classes, n=n)
