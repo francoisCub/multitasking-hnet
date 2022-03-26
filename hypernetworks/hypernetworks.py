@@ -67,7 +67,7 @@ class HyperNetwork(nn.Module):
             else:
                 # Post processing (used for target network sparsity for example)
                 module_list.append(nn.Sequential(Selector(idx, target_size, shape=shape),
-                                    post_processing(idx, target_size, shape)))
+                                    post_processing(idx, target_size, shape=shape)))
             idx += target_size
         total_target_size = idx
         self.layer_heads = nn.ModuleList(module_list)
