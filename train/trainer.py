@@ -4,6 +4,7 @@ from collections import OrderedDict
 import argparse
 import math
 import time
+import warnings
 
 import torch
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
@@ -48,23 +49,17 @@ class LightningClassifierTask(LightningModule):
 
     def configure_optimizers(self):
         if self.use_sgd:
-            optimizer = optim.SGD(self.parameters(), lr=self.learning_rate)
-            return {
-                "optimizer": optimizer,
-                "lr_scheduler": {
-                    "scheduler": ReduceLROnPlateau(optimizer, patience=self.patience//2, factor=self.lr_reduce_factor, mode=self.mode),
-                    "monitor": self.monitor,
-                },
-            }
+            warnings.warn("Deprecated: use 'use_optim' optim")
+            self.use_optim = "sgd"
+        if self.use_optim == "adam":
+            optimizer = optim.Adam
+        elif self.use_optim == "radam":
+            optimizer = optim.RAdam
+        elif self.use_optim == "sgd":
+            optimizer = optim.SGD
         else:
-            if self.use_optim == "adam":
-                optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
-            elif self.use_optim == "radam":
-                optimizer = optim.RAdam(self.parameters(), lr=self.learning_rate)
-            elif self.use_optim == "sgd":
-                optimizer = optim.SGD(self.parameters(), lr=self.learning_rate)
-            else:
-                raise ValueError()
+            raise ValueError("Invalid optimizer")
+        optimizer = optimizer(self.parameters(), lr=self.learning_rate)
         optimizers = {"optimizer": optimizer}
         if self.lr_reduce:
             optimizers["lr_scheduler"] = {
