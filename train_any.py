@@ -81,8 +81,8 @@ if __name__ == "__main__":
                         help='experiment ID (default: 0) ')
     parser.add_argument('--cls_per_task', type=int, default=10, metavar='e',
                         help='Number of classes per task (cls_per_task: 10) ')
-    parser.add_argument('--nchunks', type=int, default=176, metavar='e',
-                        help='Number of chunks (default: 176) ')
+    parser.add_argument('--nchunks', type=int, default=23, metavar='e',
+                        help='Number of chunks (default: 23) ')
     parser.add_argument('--trials', type=int, default=1, metavar='t',
                         help='Number of trials of same method (default: 1) ')
     parser.add_argument('--optim', type=str, default="adam", metavar='o',
