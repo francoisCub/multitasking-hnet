@@ -89,10 +89,12 @@ class LightningClassifierTask(LightningModule):
                 self.log_dict({"Connectivity": connectivity, "Cmin": cmin, "Cmax": cmax})
             except BaseException as err:
                 print(f"Error in connectivity estimation: {err}")
-            estimated_sparsity = estimate_target_sparsity(self.model, self.latent_size, type="hnet")
+            if hasattr(self.hparams, "target_sparsity") and self.hparams.target_sparsity > 0:
+                estimated_sparsity = estimate_target_sparsity(self.model, self.latent_size, type="hnet")
 
         else:
-            estimated_sparsity = estimate_target_sparsity(self.model, None, type="experts")
+            if hasattr(self.hparams, "target_sparsity") and self.hparams.target_sparsity > 0:
+                estimated_sparsity = estimate_target_sparsity(self.model, None, type="experts")
         self.log_dict({"Estimated target sparsity": estimated_sparsity})
 
         self.metrics_estimated = True
