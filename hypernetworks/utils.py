@@ -60,6 +60,8 @@ def estimate_target_sparsity(model, latent_size, type, layers_type=None, device=
                     if "bias_mask" in buffer_name:
                         num_zeros += sum(buffer == 0).item()
                         num_elements += buffer.nelement()
+            if num_elements == 0:
+                return 0
             return num_zeros / num_elements
         else:
             raise ValueError("hnet or experts")
