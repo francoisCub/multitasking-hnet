@@ -95,7 +95,8 @@ class LightningClassifierTask(LightningModule):
         else:
             if hasattr(self.hparams, "target_sparsity") and self.hparams.target_sparsity > 0:
                 estimated_sparsity = estimate_target_sparsity(self.model, None, type="experts")
-        self.log_dict({"Estimated target sparsity": estimated_sparsity})
+        if hasattr(self.hparams, "target_sparsity") and self.hparams.target_sparsity > 0:
+            self.log_dict({"Estimated target sparsity": estimated_sparsity})
 
         self.metrics_estimated = True
         return
