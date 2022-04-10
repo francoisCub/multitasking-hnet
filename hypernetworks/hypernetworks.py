@@ -176,9 +176,9 @@ class HyperNetwork(nn.Module):
         with torch.no_grad():
             if not hasattr(self, "num_tasks") or not (self.input == "task"):
                 raise ValueError("Average only for task-dependent models")
-            mean_z = torch.zeros((1, self.latent_size))
+            mean_z = torch.zeros((1, self.latent_size), device=x.device)
             for task in range(self.num_tasks):
-                z_t = self.encode_input(x, torch.LongTensor([task]))
+                z_t = self.encode_input(x, torch.tensor(task, dtype=torch.long, device=x.device))
                 mean_z += z_t
             mean_z /= self.num_tasks
             params = self.forward_hnet_batch(

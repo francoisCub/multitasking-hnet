@@ -35,6 +35,7 @@ class LightningClassifierTask(LightningModule):
         self.lr_reduce = lr_reduce
         self.lr_reduce_factor = lr_reduce_factor
         self.metrics_estimated = False
+        self.advanced_metrics = True
 
     def forward(self, x: torch.Tensor, task=None):
         return self.model(x, task)
@@ -68,7 +69,7 @@ class LightningClassifierTask(LightningModule):
                 }
         return optimizers
     
-    def advanced_metrics(self, batch, batch_idx, prefix=""):
+    def compute_advanced_metrics(self, batch, batch_idx, prefix=""):
         x, y, classes, task = batch
         y_hat = self.model.forward_average_z_model(x)
         loss = self.loss_function(y_hat, y)
@@ -85,8 +86,8 @@ class LightningClassifierTask(LightningModule):
         self.log_dict({f'Test Acc {task.item()}': test_acc})
         nbr_params = compute_nbr_params(self.model)
         entropy_estimate = entropy(y_hat)
-        if self.avanced_metrics:
-            self.log_dict(self.advanced_metrics(batch, prefix="Test"))
+        if self.advanced_metrics:
+            self.log_dict(self.compute_advanced_metrics(batch, batch_idx, prefix="Test"))
         if not self.metrics_estimated:
             self.estimate_metrics()
         return self.log_dict({'Test Loss': loss, 'Test Acc': test_acc, "Params": nbr_params, 'Entropy': entropy_estimate.item()})
@@ -118,6 +119,6 @@ class LightningClassifierTask(LightningModule):
         labels_hat = torch.argmax(y_hat, dim=1)
         val_acc = torch.sum(labels_hat == y).item() / (len(y) * 1.0)
         entropy_estimate = entropy(y_hat)
-        if self.avanced_metrics:
-            self.log_dict(self.advanced_metrics(batch, prefix="Val"))
+        if self.advanced_metrics:
+            self.log_dict(self.compute_advanced_metrics(batch, batch_idx, prefix="Val"))
         return self.log_dict({'Val Loss': loss, 'Val Acc': val_acc, f"Val Acc {task.item()}": val_acc, 'Entropy': entropy_estimate.item()})
