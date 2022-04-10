@@ -171,3 +171,18 @@ class HyperNetwork(nn.Module):
 
         # Return target model output
         return self.target_model(x, params)
+    
+    def forward_average_z_model(self, x):
+        with torch.no_grad():
+            if not hasattr(self, "num_tasks") or not (self.input == "task"):
+                raise ValueError("Average only for task-dependent models")
+            mean_z = torch.zeros((1, self.latent_size))
+            for task in range(self.num_tasks):
+                z_t = self.encode_input(x, torch.LongTensor([task]))
+                mean_z += z_t
+            mean_z /= self.num_tasks
+            params = self.forward_hnet_batch(
+                mean_z) if self.batch else self.forward_hnet(mean_z)
+
+            # Return target model output
+            return self.target_model(x, params)
