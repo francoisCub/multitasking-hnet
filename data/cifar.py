@@ -42,7 +42,7 @@ class CifarBatchSampler(Sampler[List[int]]):
 
 
 class LightningCifar(LightningDataModule):
-    def __init__(self, batch_size, cifar=100,  data_dir=".data", num_class_per_task=10, n_classes=100, num_tasks=10):
+    def __init__(self, batch_size, cifar=100,  data_dir=".data", num_class_per_task=10, n_classes=100, num_tasks=10, tasks=None):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
@@ -60,6 +60,7 @@ class LightningCifar(LightningDataModule):
         if n_classes != num_tasks * num_class_per_task:
             raise ValueError()
         self.num_tasks = num_tasks
+        self.tasks = tasks
 
     def prepare_data(self):
         self.dataset_gen(root=self.data_dir, train=True,
@@ -80,6 +81,8 @@ class LightningCifar(LightningDataModule):
         if stage == "test" or stage is None:
             self.data_test = self.dataset_gen(
                 root=self.data_dir, train=False, download=False, transform=self.test_transform)
+            self.data_test, _ = self.split_dataset(
+                self.data_test, n_val=0)
             self.data_test = get_sorted_dataset(
                 self.data_test, self.batch_size)
 
@@ -93,7 +96,8 @@ class LightningCifar(LightningDataModule):
         return DataLoader(self.data_test, batch_sampler=self.batch_sampler(self.data_test), collate_fn=self.get_collate_fn())
 
     def batch_sampler(self, dataset):
-        return CifarBatchSampler(SequentialSampler(dataset), batch_size=self.batch_size, drop_last=False, num_tasks=self.num_tasks)
+        num_tasks = self.num_tasks if self.tasks is None else len(self.tasks)
+        return CifarBatchSampler(SequentialSampler(dataset), batch_size=self.batch_size, drop_last=False, num_tasks=num_tasks)
 
     def get_collate_fn(self):
         num_class_per_task = self.num_class_per_task
@@ -105,11 +109,11 @@ class LightningCifar(LightningDataModule):
             task = LongTensor([y//num_class_per_task for _, y in batch])
             task = unique(task)
             if len(task) > 1:
-                raise RuntimeError("There should be one task per batch")
+                raise RuntimeError(f"There should be one task per batch, got {task}")
             return x, y, classes, task
         return collate_fn
 
-    def split_dataset(self, dataset):
+    def split_dataset(self, dataset, n_val=None):
         sorted_dataset = get_sorted_dataset(dataset, self.batch_size)
         if len(sorted_dataset) % self.n_classes != 0:
             raise ValueError()
@@ -119,10 +123,17 @@ class LightningCifar(LightningDataModule):
         if len(perm) % 10 != 0:
             raise ValueError()
         idx = perm[:len(perm)//10]
-        n_val = len(perm)//10
+        if n_val is None:
+            n_val = len(perm)//10
         val_idxs = []
         train_idxs = []
-        for cls in range(self.n_classes):
+        if self.tasks is not None:
+            classes = []
+            for t in self.tasks:
+                classes.extend([t*self.num_class_per_task+i for i in range(self.num_class_per_task)])
+        else:
+            classes = list(range(self.n_classes))
+        for cls in classes:
             perm = randperm(nbr_images_per_class) + \
                 nbr_images_per_class*cls  # idx for a given class
             if len(perm) % 10 != 0:

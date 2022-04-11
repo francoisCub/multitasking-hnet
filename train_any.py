@@ -1,4 +1,5 @@
 import argparse
+from signal import raise_signal
 
 import torch
 from pytorch_lightning import Trainer
@@ -87,6 +88,8 @@ if __name__ == "__main__":
                         help='Number of trials of same method (default: 1) ')
     parser.add_argument('--optim', type=str, default="adam", metavar='o',
                         help='optimizer (default: "adam") other: "radam, sgd"')
+    parser.add_argument('--special_training', type=str, default="normal", metavar='t',
+                        help='special training (default: "normal") other: "fewshot, ..."')
 
     args = parser.parse_args()
     exp_id = args.expid
@@ -142,6 +145,8 @@ if __name__ == "__main__":
     target_sparsity = args.target_sparsity
 
     model_to_test = args.model
+
+    special_training = args.special_training
 
     print(f"learning_rate: {learning_rate}")
     print(f"hnet_type: {hnet}")
@@ -236,9 +241,26 @@ if __name__ == "__main__":
                                            base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step,
                                            nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, name=args.name, resnet_name=resnet_name, num_class_per_task=num_class_per_task, data=args.data, target_name=args.target, trials=args.trials, target_sparsity=target_sparsity)
 
-        trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=False, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+        trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
 
-        trainer.fit(pl_model, data)
-        if not fast_dev_run:
-            trainer.test(ckpt_path="best", dataloaders=data)
+        if special_training == "normal":
+            trainer.fit(pl_model, data)
+            if not fast_dev_run:
+                trainer.test(ckpt_path="best", dataloaders=data)
+        elif special_training == "fewshot":
+            data_1 = LightningCifar(batch_size=batch_size, num_class_per_task=num_class_per_task,
+                              n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks, tasks=[0, 1, 2, 3])
+            data_2 = LightningCifar(batch_size=batch_size, num_class_per_task=num_class_per_task,
+                              n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks, tasks=[4])
+            trainer.fit(pl_model, data_1)
+            if not fast_dev_run:
+                trainer.test(ckpt_path="best", dataloaders=data_1)
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+                          track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
+            pl_model.model.train_z_only()
+            trainer.fit(pl_model, data_2)
+            if not fast_dev_run:
+                trainer.test(ckpt_path="best", dataloaders=data_2)
+        else:
+            raise ValueError()
