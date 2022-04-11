@@ -28,6 +28,7 @@ class HyperNetwork(nn.Module):
         # Core
         self.latent_size = latent_size
         self.input = input_type
+        self.special_z_mode = None
         if self.input == "learned":
             self.z = nn.Parameter(rand(self.latent_size).unsqueeze(0).expand(
                 self.batch_size, self.latent_size)) if self.batch else nn.Parameter(rand(1, self.latent_size))
@@ -151,6 +152,8 @@ class HyperNetwork(nn.Module):
 
         z = self.layerNorm(z)
 
+        z = self.get_special_z(z) # does nothing in normal mode
+
         return z
 
     def vector_to_params(params):
@@ -196,6 +199,25 @@ class HyperNetwork(nn.Module):
         for lh in self.layer_heads:
             for p in lh.parameters():
                 p.requires_grad = False
+    
+    def train_special_z(self, mode="single"):
+        self.special_z_mode = mode
+        if mode == "single":
+            self.special_z = nn.Parameter(self.task_encoder.weight.mean(dim=1))
+        elif mode == "mean_z":
+            self.z_coeff = nn.Parameter(torch.ones(self.num_tasks)/self.num_tasks)
+        else:
+            raise ValueError()
+    
+    def get_special_z(self, z):
+        if self.special_z_mode is None:
+            return z
+        elif self.special_z_mode == "single":
+            return self.special_z
+        elif self.special_z_mode == "mean_z":
+            return self.task_encoder(torch.nn.functional.softmax(self.z_coeff, dim=0))
+        else:
+            raise ValueError()
     
     def save_z(self, path=""):
         return torch.save(self.task_encoder.weight, path+"z_all.pt")
