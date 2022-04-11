@@ -250,9 +250,9 @@ if __name__ == "__main__":
                 trainer.test(ckpt_path="best", dataloaders=data)
         elif special_training == "fewshot":
             data_1 = LightningCifar(batch_size=batch_size, num_class_per_task=num_class_per_task,
-                              n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks, tasks=[0, 1, 2, 3])
+                              n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks, tasks=[0, 1, 2, 3, 4, 5, 6, 7, 8])
             data_2 = LightningCifar(batch_size=batch_size, num_class_per_task=num_class_per_task,
-                              n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks, tasks=[4])
+                              n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks, tasks=[9])
             trainer.fit(pl_model, data_1)
             if not fast_dev_run:
                 trainer.test(ckpt_path="best", dataloaders=data_1)

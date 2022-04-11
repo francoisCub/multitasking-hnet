@@ -39,12 +39,12 @@ class HyperNetwork(nn.Module):
             if num_tasks is None:
                 raise ValueError("For task hnet, give the number of task")
             self.num_tasks = num_tasks
-            self.task_encoder = nn.Linear(self.num_tasks, self.latent_size)
+            self.task_encoder = nn.Linear(self.num_tasks, self.latent_size, bias=False)
             self.task_encoder.weight = nn.Parameter(
                 torch.randn_like(self.task_encoder.weight))
         elif self.input == "input-task":
             self.num_tasks = num_tasks
-            self.task_encoder = nn.Linear(self.num_tasks, self.num_tasks)
+            self.task_encoder = nn.Linear(self.num_tasks, self.num_tasks, bias=False)
             self.task_encoder.weight = nn.Parameter(
                 torch.randn_like(self.task_encoder.weight))
             self.mixer = nn.Bilinear(
@@ -186,3 +186,16 @@ class HyperNetwork(nn.Module):
 
             # Return target model output
             return self.target_model(x, params)
+    
+    def train_z_only(self):
+        if self.input != "task":
+            raise ValueError()
+        for p in self.core.parameters():
+            p.requires_grad = False
+        
+        for lh in self.layer_heads:
+            for p in lh.parameters():
+                p.requires_grad = False
+    
+    def save_z(self, path=""):
+        return torch.save(self.task_encoder.weight, path+"z_all.pt")
