@@ -6,17 +6,17 @@ from torch_sparse import coalesce, spmm
 
 
 class SparseLinear(nn.Module):
-    def __init__(self, in_size, out_size, connectivity, distribution="uniform", sigma=torch.Tensor([1.0]), bias=False, activation_coeff=1.0):
+    def __init__(self, in_size, out_size, connectivity, distribution="uniform", sigma=torch.Tensor([1.0]), bias=False, activation_coeff=1.0, generator=None):
         super().__init__()
         self.in_size, self.out_size = in_size, out_size
         indices_out = torch.LongTensor(list(range(out_size)) * connectivity)
         if distribution == "uniform":
-            indices_in = torch.randint(in_size, (out_size*connectivity,))
+            indices_in = torch.randint(in_size, (out_size*connectivity,), generator=generator)
         elif distribution == "randperm":
-            indices_in = torch.randperm(out_size*connectivity) % in_size
+            indices_in = torch.randperm(out_size*connectivity, generator=generator) % in_size
         elif distribution == "normal":
             indices_in = torch.round(torch.normal(torch.round(
-                indices_out / (out_size / in_size)), sigma))
+                indices_out / (out_size / in_size)), sigma, generator=generator))
         elif distribution == "mixed":
             if connectivity == 1:
                 indices_in = torch.round(
@@ -29,7 +29,7 @@ class SparseLinear(nn.Module):
                 indices_in_plus_one = (torch.round(
                     indices_out / (out_size / in_size))+1)
                 indices_in = torch.round(torch.normal(torch.round(
-                    indices_out / (out_size / in_size)), sigma))
+                    indices_out / (out_size / in_size)), sigma, generator=generator))
                 indices_in[:out_size] = indices_in_minus_one[:out_size]
                 indices_in[out_size:2*out_size] = indices_in_aligned[:out_size]
                 indices_in[2*out_size:3 *
@@ -46,7 +46,7 @@ class SparseLinear(nn.Module):
         indices, values = coalesce(indices.type(
             torch.long), values, out_size, in_size, op="add")
         self.register_buffer('indices', indices) #nn.Parameter(indices.type(torch.float))
-        values = (torch.rand_like(values) - 0.5) * 2 * \
+        values = (torch.rand_like(values, generator=generator) - 0.5) * 2 * \
             math.sqrt(6 / ((1+activation_coeff**2)*(len(values)/out_size)))
         self.values = nn.Parameter(values)
 
@@ -92,7 +92,7 @@ def get_activation_coeff(activation):
 
 class HnetSparse(nn.Module):
     def __init__(self, latent_size, output_size, base=None, num_layers=None,
-                 distribution="uniform", connectivity_type="constant", connectivity=3, sigma=torch.Tensor([1.0]), activation="none", step=1, bias=False):
+                 distribution="uniform", connectivity_type="constant", connectivity=3, sigma=torch.Tensor([1.0]), activation="none", step=1, bias=False, seed=None):
         super().__init__()
         self.latent_size = latent_size
         self.output_size = output_size
@@ -124,6 +124,12 @@ class HnetSparse(nn.Module):
         self.connectivity = connectivity
         self.sigma = sigma.detach().clone()
 
+        if seed is not None:
+            generator = torch.Generator()
+            generator.manual_seed(seed)
+        else:
+            generator = None
+
         layer_list = []
         current_size = self.output_size
         if connectivity_type in ["linear-decrease", "exponential-decrease"]:
@@ -135,7 +141,7 @@ class HnetSparse(nn.Module):
             new_connectivity, new_sigma, first = sparse_helper(
                 self.connectivity, self.distribution, self.sigma, first)
             layer_list.append(SparseLinear(int(current_size / self.base),
-                              current_size, new_connectivity, self.distribution, new_sigma, bias, activation_coeff=activation_coeff))
+                              current_size, new_connectivity, self.distribution, new_sigma, bias, activation_coeff=activation_coeff, generator=generator))
             if activation == "leaky":
                 layer_list.append(nn.LeakyReLU(negative_slope=activation_coeff))
             elif activation == "relu":
@@ -152,7 +158,7 @@ class HnetSparse(nn.Module):
         new_connectivity, new_sigma, first = sparse_helper(
             self.connectivity, self.distribution, self.sigma, first)
         layer_list.append(SparseLinear(
-            self.latent_size, current_size, new_connectivity, self.distribution, new_sigma, bias))
+            self.latent_size, current_size, new_connectivity, self.distribution, new_sigma, bias, generator=generator))
 
         self.net = nn.Sequential(*layer_list[::-1])
 
