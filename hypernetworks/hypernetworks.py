@@ -12,7 +12,7 @@ from hypernetworks.chunked_hypernetwork import HnetChunked
 class HyperNetwork(nn.Module):
     def __init__(self, batch_target_model: nn.Module, input_type="learned", hnet="linear", latent_size=32,
                  encoder=None, mode="one_block", variation=False, batch=True, one_vector=False, num_tasks=None, aggregate=False,
-                 distribution="normal", connectivity_type="linear-decrease", connectivity=3, sigma=torch.Tensor([2]), activation="prelu", step=1, base=2, nbr_chunks=8, bias_sparse=False, normalize=True, post_processing=None) -> None:
+                 distribution="normal", connectivity_type="linear-decrease", connectivity=3, sigma=torch.Tensor([2]), activation="prelu", step=1, base=2, nbr_chunks=8, bias_sparse=False, normalize=True, post_processing=None, seed=None, zmode=None) -> None:
         super().__init__()
         # Init
         self.target_model = batch_target_model
@@ -87,7 +87,7 @@ class HyperNetwork(nn.Module):
         elif hnet == "sparse":
             # idx = total_size
             self.core = HnetSparse(self.latent_size, total_target_size, base=base, distribution=distribution,
-                                   connectivity_type=connectivity_type, connectivity=connectivity, sigma=sigma, activation=activation, step=step, bias=bias_sparse)
+                                   connectivity_type=connectivity_type, connectivity=connectivity, sigma=sigma, activation=activation, step=step, bias=bias_sparse, seed=seed)
 
         elif hnet == "benes":
             self.core = BenesOne(self.latent_size, total_target_size, full=True)
@@ -98,6 +98,9 @@ class HyperNetwork(nn.Module):
             
         else:
             raise ValueError("hnet should be in linear or MLP")
+        
+        if zmode is not None:
+            self.train_special_z(mode=zmode)
 
     def forward_hnet_batch(self, z):
         if z.shape[1] != self.latent_size:
