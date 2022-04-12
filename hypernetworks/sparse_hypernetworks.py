@@ -46,7 +46,8 @@ class SparseLinear(nn.Module):
         indices, values = coalesce(indices.type(
             torch.long), values, out_size, in_size, op="add")
         self.register_buffer('indices', indices) #nn.Parameter(indices.type(torch.float))
-        values = (torch.rand_like(values, generator=generator) - 0.5) * 2 * \
+        values = torch.rand(values.size(), dtype=values.dtype, layout=values.layout, device=values.device, generator=generator)
+        values = (values - 0.5) * 2 * \
             math.sqrt(6 / ((1+activation_coeff**2)*(len(values)/out_size)))
         self.values = nn.Parameter(values)
 
