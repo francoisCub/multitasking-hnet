@@ -151,3 +151,14 @@ figures
 *.yml
 *.pdf
 *.txt
+*.sbatch
+train_cifar.py
+train_cifar_2.py
+train_cifar_2_temp.py
+train_compare.py
+train_mnist.py
+analysis/*.ipynb
+loading_exp
+loading_exp_ckpt
+loading_exp_csv
+train.py
