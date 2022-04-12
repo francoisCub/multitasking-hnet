@@ -14,6 +14,7 @@ from hypernetworks.target_models import BatchTargetModel, TargetModel
 from models.vision import ConvTaskEnsembleCIFAR, ResNet, ResNet32x32, ResNet9, SmallResNet, get_resnet18
 from train.trainer import LightningClassifierTask
 from hypernetworks.utils import compute_nbr_params, sparsify_resnet
+from random import randint
 
 def get_comparison_name(**kwargs):
     return "-".join([f"eid={kwargs['exp_id']}", f"d={kwargs['distribution']}", f"c={kwargs['connectivity_type']}", f"lin={kwargs['nonlin']}", f"lr={kwargs['lr']}", f"n={kwargs['normalize']}"])
@@ -141,6 +142,7 @@ if __name__ == "__main__":
     else:
         sigma =  torch.Tensor([args.sigma])
     step = 1
+    seed = randint(0, 2**31)
 
     target_sparsity = args.target_sparsity
 
@@ -208,7 +210,7 @@ if __name__ == "__main__":
 
         if model_to_test == "hnet":
             model = HyperNetwork(batch_target_model=batch_target_model, hnet=hnet, input_type=input_type, encoder=encoder, latent_size=latent_size, batch=batch, sigma=sigma,
-                                 base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, post_processing=post_processing)
+                                 base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, post_processing=post_processing, seed=seed)
         elif model_to_test == "experts":
             # TODO adapt for other dataset and Target network
             if args.data == "cifar100" or args.data == "cifar10":
@@ -238,7 +240,7 @@ if __name__ == "__main__":
         pl_model = LightningClassifierTask(model=model, batch_size=batch_size, patience=patience, monitor=monitor, mode=mode, lr_reduce_factor=lr_reduce_factor,
                                            latent_size=latent_size, learning_rate=learning_rate, use_sgd=use_sgd, lr_reduce=lr_reduce, use_optim=use_optim,
                                            batch_target_model=batch_target_model.__class__.__name__, hnet=hnet, input_type=input_type, encoder=encoder.__class__.__name__, batch=batch, sigma=sigma.item(), # next model params
-                                           base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step,
+                                           base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, seed=seed,
                                            nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, name=args.name, resnet_name=resnet_name, num_class_per_task=num_class_per_task, data=args.data, target_name=args.target, trials=args.trials, target_sparsity=target_sparsity)
 
         trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
