@@ -258,11 +258,64 @@ if __name__ == "__main__":
             trainer.fit(pl_model, data_1)
             if not fast_dev_run:
                 trainer.test(ckpt_path="best", dataloaders=data_1)
+            # Second training
+            # Callbacks
+            early_stopping_callback = EarlyStopping(
+                monitor=monitor, patience=patience, mode=mode)
+            checkpoint_callback = ModelCheckpoint(
+                monitor=monitor,
+                mode=mode,
+                dirpath=ckpt_path,
+                filename=name + f"-{args.name}" + "-{epoch:02d}",
+            )
+            lr_monitor_callback = LearningRateMonitor()
             trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
             pl_model.model.train_z_only()
             trainer.fit(pl_model, data_2)
             if not fast_dev_run:
                 trainer.test(ckpt_path="best", dataloaders=data_2)
+        elif special_training == "singlez":
+            trainer.fit(pl_model, data)
+            if not fast_dev_run:
+                trainer.test(ckpt_path="best", dataloaders=data)
+            # Second training
+            # Callbacks
+            early_stopping_callback = EarlyStopping(
+                monitor=monitor, patience=patience, mode=mode)
+            checkpoint_callback = ModelCheckpoint(
+                monitor=monitor,
+                mode=mode,
+                dirpath=ckpt_path,
+                filename=name + f"-{args.name}" + "-{epoch:02d}",
+            )
+            lr_monitor_callback = LearningRateMonitor()
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+                          track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
+            pl_model.model.train_z_only()
+            pl_model.model.freeze_z()
+            pl_model.model.train_special_z(mode="single")
+            trainer.fit(pl_model, data)
+            if not fast_dev_run:
+                trainer.test(ckpt_path="best", dataloaders=data)
+            # Third training
+            # Callbacks
+            early_stopping_callback = EarlyStopping(
+                monitor=monitor, patience=patience, mode=mode)
+            checkpoint_callback = ModelCheckpoint(
+                monitor=monitor,
+                mode=mode,
+                dirpath=ckpt_path,
+                filename=name + f"-{args.name}" + "-{epoch:02d}",
+            )
+            lr_monitor_callback = LearningRateMonitor()
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+                          track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
+            pl_model.model.train_z_only()
+            pl_model.model.freeze_z()
+            pl_model.model.train_special_z(mode="mean_z")
+            trainer.fit(pl_model, data)
+            if not fast_dev_run:
+                trainer.test(ckpt_path="best", dataloaders=data)
         else:
             raise ValueError()
