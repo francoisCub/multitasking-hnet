@@ -206,11 +206,14 @@ class HyperNetwork(nn.Module):
     def train_special_z(self, mode="single"):
         self.special_z_mode = mode
         if mode == "single":
-            self.special_z = nn.Parameter(self.task_encoder.weight.mean(dim=1))
+            self.special_z = nn.Parameter(self.task_encoder.weight.mean(dim=1).unsqueeze(0))
         elif mode == "mean_z":
-            self.z_coeff = nn.Parameter(torch.ones(self.num_tasks)/self.num_tasks)
+            self.z_coeff = nn.Parameter(torch.ones(self.num_tasks).unsqueeze(0)/self.num_tasks)
         else:
             raise ValueError()
+    
+    def freeze_z(self):
+        self.task_encoder.weight.requires_grad = False
     
     def get_special_z(self, z):
         if self.special_z_mode is None:
