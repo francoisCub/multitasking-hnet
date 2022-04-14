@@ -1,5 +1,4 @@
 import argparse
-from signal import raise_signal
 
 import torch
 from pytorch_lightning import Trainer
@@ -8,6 +7,7 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 
 from data.cifar import LightningCifar
+from data.cifar_tasks import LightningCifarTasks
 from hypernetworks.hypernetworks import HyperNetwork
 from hypernetworks.modules import get_sparsify
 from hypernetworks.target_models import BatchTargetModel, TargetModel
@@ -83,6 +83,8 @@ if __name__ == "__main__":
                         help='experiment ID (default: 0) ')
     parser.add_argument('--cls_per_task', type=int, default=10, metavar='e',
                         help='Number of classes per task (cls_per_task: 10) ')
+    parser.add_argument('--num_tasks', type=int, default=-1, metavar='e',
+                        help='Number of tasks (defalut: -1: num_classes/cls_per_task) ')
     parser.add_argument('--nchunks', type=int, default=23, metavar='e',
                         help='Number of chunks (default: 23) ')
     parser.add_argument('--trials', type=int, default=1, metavar='t',
@@ -183,6 +185,9 @@ if __name__ == "__main__":
                               n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks)
     else:
         raise NotImplementedError("Only cifar100 is implemented")
+    
+    if args.num_tasks > 0:
+        num_tasks = args.num_tasks # can discard data previously built
 
     for version in range(args.trials):
 
@@ -317,5 +322,30 @@ if __name__ == "__main__":
             trainer.fit(pl_model, data)
             if not fast_dev_run:
                 trainer.test(ckpt_path="best", dataloaders=data)
+        elif special_training == "fewshot2":
+            data_1 = LightningCifarTasks(batch_size=batch_size, num_class_per_task=num_class_per_task,
+                              n_classes=n_classes, cifar=n_classes, num_tasks=2, tasks=[(0, 1), (2, 3)])
+            data_2 = LightningCifarTasks(batch_size=batch_size, num_class_per_task=num_class_per_task,
+                              n_classes=n_classes, cifar=n_classes, num_tasks=4, tasks=[(0, 2), (1, 3), (0, 3), (2, 1)], task_ids=[2, 3, 4, 5])
+            trainer.fit(pl_model, data_1)
+            if not fast_dev_run:
+                trainer.test(ckpt_path="best", dataloaders=data_1)
+            # Second training
+            # Callbacks
+            early_stopping_callback = EarlyStopping(
+                monitor=monitor, patience=patience, mode=mode)
+            checkpoint_callback = ModelCheckpoint(
+                monitor=monitor,
+                mode=mode,
+                dirpath=ckpt_path,
+                filename=name + f"-{args.name}" + "-{epoch:02d}",
+            )
+            lr_monitor_callback = LearningRateMonitor()
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+                          track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
+            pl_model.model.train_z_only()
+            trainer.fit(pl_model, data_2)
+            if not fast_dev_run:
+                trainer.test(ckpt_path="best", dataloaders=data_2)
         else:
             raise ValueError()
