@@ -347,5 +347,11 @@ if __name__ == "__main__":
             trainer.fit(pl_model, data_2)
             if not fast_dev_run:
                 trainer.test(ckpt_path="best", dataloaders=data_2)
+        elif special_training == "interp1-2":
+            data_1 = LightningCifarTasks(batch_size=batch_size, num_class_per_task=num_class_per_task,
+                              n_classes=n_classes, cifar=n_classes, num_tasks=2, tasks=[(0, 1), (2, 3)])
+            trainer.fit(pl_model, data_1)
+            if not fast_dev_run:
+                trainer.test(ckpt_path="best", dataloaders=data_1)
         else:
             raise ValueError()

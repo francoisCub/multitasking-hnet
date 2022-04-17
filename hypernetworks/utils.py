@@ -110,4 +110,4 @@ def get_z_interp(z1, z2, steps=21):
         size = z1.shape[1]
     else:
         size = z1.shape[0]
-    return lerp(z1, z2, linspace(0, 1.0, steps=steps).expand((size, steps)).T)
+    return lerp(z1, z2, linspace(0, 1.0, steps=steps, device=z1.device).expand((size, steps)).T)
