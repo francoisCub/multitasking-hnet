@@ -14,7 +14,7 @@ from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 from torch import nn, optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from hypernetworks.hypernetworks import HyperNetwork
-from hypernetworks.utils import estimate_connectivity, compute_nbr_params, entropy, estimate_target_sparsity
+from hypernetworks.utils import estimate_connectivity, compute_nbr_params, entropy, estimate_target_sparsity, get_z_interp
 
 
 class LightningClassifierTask(LightningModule):
@@ -88,6 +88,11 @@ class LightningClassifierTask(LightningModule):
         entropy_estimate = entropy(y_hat)
         if self.advanced_metrics:
             self.log_dict(self.compute_advanced_metrics(batch, batch_idx, prefix="Test"))
+            for i, z in enumerate(get_z_interp(self.model.task_encoder.weight[:, 0], self.model.task_encoder.weight[:, 1])):
+                y_hat = self.model.forward_z(x, z)
+                labels_hat = torch.argmax(y_hat, dim=1)
+                test_acc = torch.sum(labels_hat == y).item() / (len(y) * 1.0)
+                self.log(f"Test Acc {task.item()} interp {i}", test_acc)
         if not self.metrics_estimated:
             self.estimate_metrics()
         return self.log_dict({'Test Loss': loss, 'Test Acc': test_acc, "Params": nbr_params, 'Entropy': entropy_estimate.item()})

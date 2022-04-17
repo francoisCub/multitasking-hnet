@@ -193,6 +193,22 @@ class HyperNetwork(nn.Module):
             # Return target model output
             return self.target_model(x, params)
     
+    def forward_z(self, x, z):
+        if not hasattr(self, "num_tasks") or not (self.input == "task"):
+            raise ValueError("Average only for task-dependent models")
+        
+        if len(z.shape) == 1:
+            params = self.forward_hnet_batch(
+                z.unsqueeze(0)) if self.batch else self.forward_hnet(z.unsqueeze(0))
+        elif len(z.shape) == 2:
+            params = self.forward_hnet_batch(
+                z) if self.batch else self.forward_hnet(z)
+        else:
+            raise ValueError()
+
+        # Return target model output
+        return self.target_model(x, params)
+    
     def train_z_only(self):
         if self.input != "task":
             raise ValueError()

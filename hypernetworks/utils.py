@@ -1,5 +1,6 @@
-from torch import Tensor, LongTensor, mean, median, min, nn, ones, sum, no_grad, exp, randn
 import torch.nn.utils.prune as prune
+from torch import (LongTensor, Tensor, exp, lerp, linspace, mean, median, min,
+                   nn, no_grad, ones, randn, sum)
 from torch.nn.utils import parameters_to_vector
 
 
@@ -102,3 +103,11 @@ def sparsify_resnet(model, sparsity):
 )   
 
     return model
+
+def get_z_interp(z1, z2, steps=21):
+    assert(z1.shape == z2.shape)
+    if len(z1.shape) == 2:
+        size = z1.shape[1]
+    else:
+        size = z1.shape[0]
+    return lerp(z1, z2, linspace(0, 1.0, steps=steps).expand((size, steps)).T)
