@@ -7,7 +7,7 @@ from torch import LongTensor, randperm, stack, unique, cat
 from torch.utils.data import DataLoader, Sampler, SequentialSampler, Subset, random_split
 from torchvision.datasets import CIFAR100, CIFAR10
 from torchvision.transforms import (Compose, Normalize, RandomCrop,
-                                    RandomHorizontalFlip, ToTensor, RandomAffine)
+                                    RandomHorizontalFlip, ToTensor, RandomAffine, ColorJitter)
 from random import choice
 
 from data.utils import get_sorted_dataset
@@ -41,7 +41,7 @@ class CifarBatchSampler(Sampler[List[int]]):
 
 
 class LightningCifarTasks(LightningDataModule):
-    def __init__(self, batch_size, tasks:List[Tuple[int,int]], cifar=100,  data_dir=".data", num_class_per_task=10, n_classes=100, num_tasks=10, task_ids=None):
+    def __init__(self, batch_size, tasks:List[Tuple[int,int]], cifar=100,  data_dir=".data", num_class_per_task=10, n_classes=100, num_tasks=10, task_ids=None, color_jitter=False):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
@@ -53,6 +53,11 @@ class LightningCifarTasks(LightningDataModule):
         self.test_transform = Compose([
             ToTensor(),
             Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
+        if color_jitter:
+            self.transform = Compose([ColorJitter(hue=[0.2, 0.3]),
+                            self.transform])
+            self.test_transform = Compose([ColorJitter(hue=[0.2, 0.3]),
+                            self.test_transform])
         self.num_class_per_task = num_class_per_task
         self.n_classes = n_classes
         self.dataset_gen = CIFAR100 if cifar == 100 else CIFAR10
