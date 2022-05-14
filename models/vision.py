@@ -5,6 +5,18 @@ from torch import nn, unique
 from torchvision.models import resnet18
 
 
+class MNISTMLP(nn.Module):
+    def __init__(self, dim=10):
+        super().__init__()
+        self.net = nn.Sequential(nn.Flatten(),
+                        nn.Linear(28*28, 400), nn.ReLU(),
+                        nn.Linear(400, 400), nn.ReLU(),
+                        nn.Linear(400, 400), nn.ReLU(),
+                        nn.Linear(400, dim), nn.ReLU())
+    
+    def forward(self, x):
+        return self.net(x)
+
 class ConvMNIST(nn.Module):
     def __init__(self, dim=10, nonlinear=True):
         super().__init__()
