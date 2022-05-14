@@ -8,10 +8,11 @@ from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
 
 from data.cifar import LightningCifar
 from data.cifar_tasks import LightningCifarTasks
+from data.permute_mnist import LightningPermutedMNIST
 from hypernetworks.hypernetworks import HyperNetwork
 from hypernetworks.modules import get_sparsify
 from hypernetworks.target_models import BatchTargetModel, TargetModel
-from models.vision import ConvTaskEnsembleCIFAR, ResNet, ResNet32x32, ResNet9, SmallResNet, get_resnet18
+from models.vision import MNISTMLP, ConvTaskEnsembleCIFAR, ResNet, ResNet32x32, ResNet9, SmallResNet, get_resnet18
 from train.trainer import LightningClassifierTask
 from hypernetworks.utils import compute_nbr_params, sparsify_resnet
 from random import randint
@@ -32,7 +33,8 @@ def get_sparsify_name(model_to_test, **kwargs):
 
 def get_target_net(name):
     networks = {"ResNet32x32": ResNet32x32,
-    "ResNet18": get_resnet18}
+    "ResNet18": get_resnet18,
+    "MNISTMLP": MNISTMLP}
     return networks[name]
 
 if __name__ == "__main__":
@@ -183,6 +185,12 @@ if __name__ == "__main__":
         num_tasks = n_classes // num_class_per_task
         data = LightningCifar(batch_size=batch_size, num_class_per_task=num_class_per_task,
                               n_classes=n_classes, cifar=n_classes, num_tasks=num_tasks)
+    elif args.data == "permutemnist":
+        n_classes = 10
+        num_tasks = args.num_tasks
+        assert(num_class_per_task == 10)
+        assert(num_classes == 10)
+        data = LightningPermutedMNIST(batch_size=batch_size, num_tasks=num_tasks)
     else:
         raise NotImplementedError("Only cifar100 is implemented")
     
@@ -248,7 +256,7 @@ if __name__ == "__main__":
                                            base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, seed=seed,
                                            nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, name=args.name, resnet_name=resnet_name, num_class_per_task=num_class_per_task, data=args.data, target_name=args.target, trials=args.trials, target_sparsity=target_sparsity)
 
-        trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+        trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=0, auto_select_gpus=False, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
 
         if special_training == "normal":

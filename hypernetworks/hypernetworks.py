@@ -3,6 +3,7 @@ import math
 
 import torch
 from torch import nn, rand
+import warnings
 
 from hypernetworks.modules import Selector
 from hypernetworks.sparse_hypernetworks import BenesOne, HnetSparse
@@ -119,6 +120,10 @@ class HyperNetwork(nn.Module):
         return batch_params
 
     def forward_hnet(self, z):
+        if z.shape[0] > 1:
+            # Warning, should send a single z par batch
+            warnings.warn("Single z per batch")
+            z = z[0].unsqueeze(0)
         z = self.core(z)
         params = []
         for (name, shape, _), head in zip(self.target_model.get_params_info(), self.layer_heads):

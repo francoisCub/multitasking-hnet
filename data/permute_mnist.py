@@ -54,11 +54,11 @@ class PermutedMNIST(Dataset):
     def __getitem__(self, index):
         x, y = self.data[index]
         x_perm = x.view(-1)[self.permutation].view(1, 28, 28)
-        return x_perm, y, y, torch.tensor(self.task_id, dtype=torch.int)
+        return x_perm, y, y, torch.tensor(self.task_id, dtype=torch.int).long()
 
 
 class LightningPermutedMNIST(LightningDataModule):
-    def __init__(self, batch_size, data_dir=".data", num_tasks=10, task_ids=None):
+    def __init__(self, batch_size, data_dir=".data", num_tasks=10):
         super().__init__()
         self.data_dir = data_dir
         self.root = data_dir
@@ -114,27 +114,23 @@ class LightningPermutedMNIST(LightningDataModule):
         return tasks_idx
 
     def train_dataloader(self):
-        return DataLoader(self.data_train, batch_sampler=self.batch_sampler(self.data_train, self.train_idx))
+        return DataLoader(self.data_train, batch_sampler=self.batch_sampler(self.data_train, self.train_idx), collate_fn=self.get_collate_fn())
 
     def val_dataloader(self):
-        return DataLoader(self.data_val, batch_sampler=self.batch_sampler(self.data_val, self.val_idx))
+        return DataLoader(self.data_val, batch_sampler=self.batch_sampler(self.data_val, self.val_idx), collate_fn=self.get_collate_fn())
 
     def test_dataloader(self):
-        return DataLoader(self.data_test, batch_sampler=self.batch_sampler(self.data_test, self.test_idx))
+        return DataLoader(self.data_test, batch_sampler=self.batch_sampler(self.data_test, self.test_idx), collate_fn=self.get_collate_fn())
 
     def batch_sampler(self, dataset, tasks_idx):
         return MNISTBatchSampler(SequentialSampler(dataset), batch_size=self.batch_size, drop_last=False, num_tasks=self.num_tasks, tasks_idx=tasks_idx)
 
-    # def get_collate_fn(self):
+    def get_collate_fn(self):
 
-    #     def collate_fn(batch):
-    #         classes = LongTensor([y for _, y in batch])
-    #         unique_classes = sorted(unique(classes).tolist())
-    #         for i, t in enumerate(self.tasks):
-    #             if all(x in t for x in unique_classes):
-    #                 task = torch.tensor([self.task_ids[i]], dtype=torch.long)
-    #                 task_classes = t
-    #         x = stack([x for x, _ in batch])
-    #         y = LongTensor([task_classes.index(y) for _, y in batch])
-    #         return x, y, classes, task
-    #     return collate_fn
+        def collate_fn(batch):
+            x = stack([x for x, _, _, _ in batch])
+            y = LongTensor([y for _, y, _, _ in batch])
+            c = LongTensor([c for _, _, c, _ in batch])
+            task = LongTensor([t for _, _, _, t in batch])
+            return x, y, y, task[0].unsqueeze(0)
+        return collate_fn

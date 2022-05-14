@@ -35,7 +35,7 @@ class LightningClassifierTask(LightningModule):
         self.lr_reduce = lr_reduce
         self.lr_reduce_factor = lr_reduce_factor
         self.metrics_estimated = False
-        self.advanced_metrics = True
+        self.advanced_metrics = False
 
     def forward(self, x: torch.Tensor, task=None):
         return self.model(x, task)
