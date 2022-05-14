@@ -322,6 +322,12 @@ if __name__ == "__main__":
             trainer.fit(pl_model, data)
             if not fast_dev_run:
                 trainer.test(ckpt_path="best", dataloaders=data)
+        elif special_training == "singlezbis":
+            pl_model.model.freeze_z()
+            pl_model.model.train_special_z(mode="single")
+            trainer.fit(pl_model, data)
+            if not fast_dev_run:
+                trainer.test(ckpt_path="best", dataloaders=data)
         elif special_training == "fewshot2":
             data_1 = LightningCifarTasks(batch_size=batch_size, num_class_per_task=num_class_per_task,
                               n_classes=n_classes, cifar=n_classes, num_tasks=2, tasks=[(0, 1), (2, 3)])
@@ -354,6 +360,8 @@ if __name__ == "__main__":
             if not fast_dev_run:
                 trainer.test(ckpt_path="best", dataloaders=data_1)
         elif special_training == "fewshot3":
+            logger = TensorBoardLogger(save_dir=log_dir, name=name)
+            csv_logger = CSVLogger(save_dir=csv_log_dir, name=name)
             data_1 = LightningCifarTasks(batch_size=batch_size, num_class_per_task=num_class_per_task,
                               n_classes=n_classes, cifar=n_classes, num_tasks=5, tasks=[(0,1), (2,3), (4,5), (6,7), (8,9)])
             data_2 = LightningCifarTasks(batch_size=batch_size, num_class_per_task=num_class_per_task,
@@ -362,6 +370,13 @@ if __name__ == "__main__":
             if not fast_dev_run:
                 trainer.test(ckpt_path="best", dataloaders=data_1)
             # Second training
+            logger = TensorBoardLogger(save_dir=log_dir+"bis", name=name)
+            csv_logger = CSVLogger(save_dir=csv_log_dir+"bis", name=name)
+            pl_model = LightningClassifierTask(model=model, batch_size=batch_size, patience=patience, monitor=monitor, mode=mode, lr_reduce_factor=lr_reduce_factor,
+                                           latent_size=latent_size, learning_rate=learning_rate, use_sgd=use_sgd, lr_reduce=lr_reduce, use_optim=use_optim,
+                                           batch_target_model=batch_target_model.__class__.__name__, hnet=hnet, input_type=input_type, encoder=encoder.__class__.__name__, batch=batch, sigma=sigma.item(), # next model params
+                                           base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, seed=seed,
+                                           nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, name=args.name, resnet_name=resnet_name, num_class_per_task=num_class_per_task, data=args.data, target_name=args.target, trials=args.trials, target_sparsity=target_sparsity)
             # Callbacks
             early_stopping_callback = EarlyStopping(
                 monitor=monitor, patience=patience, mode=mode)
@@ -373,7 +388,48 @@ if __name__ == "__main__":
             )
             lr_monitor_callback = LearningRateMonitor()
             trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
-                          track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
+                          track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])
+            trainer.fit(pl_model, data_2)
+            if not fast_dev_run:
+                trainer.test(ckpt_path="best", dataloaders=data_2)
+            # Third training
+            logger = TensorBoardLogger(save_dir=log_dir+"ter", name=name)
+            csv_logger = CSVLogger(save_dir=csv_log_dir+"ter", name=name)
+            pl_model = LightningClassifierTask(model=model, batch_size=batch_size, patience=patience, monitor=monitor, mode=mode, lr_reduce_factor=lr_reduce_factor,
+                                           latent_size=latent_size, learning_rate=learning_rate, use_sgd=use_sgd, lr_reduce=lr_reduce, use_optim=use_optim,
+                                           batch_target_model=batch_target_model.__class__.__name__, hnet=hnet, input_type=input_type, encoder=encoder.__class__.__name__, batch=batch, sigma=sigma.item(), # next model params
+                                           base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, seed=seed,
+                                           nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, name=args.name, resnet_name=resnet_name, num_class_per_task=num_class_per_task, data=args.data, target_name=args.target, trials=args.trials, target_sparsity=target_sparsity)
+            # Callbacks
+            early_stopping_callback = EarlyStopping(
+                monitor=monitor, patience=patience, mode=mode)
+            checkpoint_callback = ModelCheckpoint(
+                monitor=monitor,
+                mode=mode,
+                dirpath=ckpt_path,
+                filename=name + f"-{args.name}" + "-{epoch:02d}",
+            )
+            lr_monitor_callback = LearningRateMonitor()
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+                          track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])
+            trainer.fit(pl_model, data_1)
+            if not fast_dev_run:
+                trainer.test(ckpt_path="best", dataloaders=data_2)
+            # Fourth training
+            logger = TensorBoardLogger(save_dir=log_dir+"quater", name=name)
+            csv_logger = CSVLogger(save_dir=csv_log_dir+"quater", name=name)
+            # Callbacks
+            early_stopping_callback = EarlyStopping(
+                monitor=monitor, patience=patience, mode=mode)
+            checkpoint_callback = ModelCheckpoint(
+                monitor=monitor,
+                mode=mode,
+                dirpath=ckpt_path,
+                filename=name + f"-{args.name}" + "-{epoch:02d}",
+            )
+            lr_monitor_callback = LearningRateMonitor()
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+                          track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])
             pl_model.model.train_z_only()
             trainer.fit(pl_model, data_2)
             if not fast_dev_run:
