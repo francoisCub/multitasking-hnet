@@ -1,8 +1,8 @@
-# multitasking-hnet
+# Sparse hypernetworks for multitasking
 Experimentation on multitasking hypernetworks and implementation of sparse hypernetworks.
 
 ## Context
- Master's thesis on sparse hypernetworks for multitasking completed in order to obtain the degree of Master of Science in Computer Science Engineering (University of Liège, academic year 2021-2022).
+Master's thesis on sparse hypernetworks for multitasking completed in order to obtain the degree of Master of Science in Computer Science Engineering (University of Liège, academic year 2021-2022).
 
 ## Content
 
