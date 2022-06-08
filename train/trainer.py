@@ -1,20 +1,14 @@
-import copy
-import random
-from collections import OrderedDict
-import argparse
-import math
 import time
 import warnings
 
 import torch
-from pytorch_lightning import LightningDataModule, LightningModule, Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from pytorch_lightning.loggers import CSVLogger, TensorBoardLogger
+from hypernetworks.hypernetworks import HyperNetwork
+from hypernetworks.utils import (compute_nbr_params, entropy,
+                                 estimate_connectivity,
+                                 estimate_target_sparsity, get_z_interp)
+from pytorch_lightning import LightningModule
 from torch import nn, optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from hypernetworks.hypernetworks import HyperNetwork
-from hypernetworks.utils import estimate_connectivity, compute_nbr_params, entropy, estimate_target_sparsity, get_z_interp
 
 
 class LightningClassifierTask(LightningModule):

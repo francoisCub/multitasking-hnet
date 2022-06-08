@@ -1,4 +1,5 @@
 import argparse
+from random import randint
 
 import torch
 from pytorch_lightning import Trainer
@@ -12,10 +13,11 @@ from data.permute_mnist import LightningPermutedMNIST
 from hypernetworks.hypernetworks import HyperNetwork
 from hypernetworks.modules import get_sparsify
 from hypernetworks.target_models import BatchTargetModel, TargetModel
-from models.vision import MNISTMLP, ConvTaskEnsembleCIFAR, ResNet, ResNet32x32, ResNet9, SmallResNet, get_resnet18
-from train.trainer import LightningClassifierTask
 from hypernetworks.utils import compute_nbr_params, sparsify_resnet
-from random import randint
+from models.vision import (MNISTMLP, ConvTaskEnsembleCIFAR, ResNet32x32,
+                           get_resnet18)
+from train.trainer import LightningClassifierTask
+
 
 def get_comparison_name(**kwargs):
     return "-".join([f"eid={kwargs['exp_id']}", f"d={kwargs['distribution']}", f"c={kwargs['connectivity_type']}", f"lin={kwargs['nonlin']}", f"lr={kwargs['lr']}", f"n={kwargs['normalize']}"])
@@ -112,19 +114,19 @@ if __name__ == "__main__":
     accumulate_grad_batches = 3 # Always
     gradient_clip_val = 1.0 # Always
     fast_dev_run = args.dev != 0
-    lr_reduce = args.lrred == 1 # False for first 2 experiments
-    lr_reduce_factor = 0.5 # none for first 2 experimetns
+    lr_reduce = args.lrred == 1
+    lr_reduce_factor = 0.5
 
     in_channels = 3 # Data
     hnet = args.hnet
     input_type = args.input
     normalize = args.norm == 1
-    latent_size = args.lsize # 512 or 10000
+    latent_size = args.lsize # 64
     n = 5 # Resnet depth parameter
     base = 2 # always
     distribution = args.distrib
-    connectivity_type = args.ctype #"exponential-decrease"
-    connectivity = 3 # not used for linear decrease
+    connectivity_type = args.ctype #"linear-decrease"
+    connectivity = 3 # not used for linear-decrease and exponential-decrease
     nbr_chunks = args.nchunks
     if args.nonlin == "linear":
         activation = "none"
@@ -154,21 +156,6 @@ if __name__ == "__main__":
 
     special_training = args.special_training
 
-    print(f"learning_rate: {learning_rate}")
-    print(f"hnet_type: {hnet}")
-    print(f"input_type: {input_type}")
-    print(f"batch_size: {batch_size}")
-    print(f"model to test: {model_to_test}")
-    print(f"non linearity: {args.nonlin}")
-    print(f"fast_dev_run: {fast_dev_run}")
-    print(f"patience={patience}")
-
-    # # ResNet18
-    # resnet = get_resnet18
-    # resnet_name = "ResNet18"
-
-    # # ResNet18
-    # resnet = ResNet32x32
     resnet_name = args.target
     resnet = get_target_net(resnet_name)
 
@@ -192,7 +179,7 @@ if __name__ == "__main__":
         assert(num_classes == 10)
         data = LightningPermutedMNIST(batch_size=batch_size, num_tasks=num_tasks)
     else:
-        raise NotImplementedError("Only cifar100 is implemented")
+        raise NotImplementedError(f"Dataset {args.data} is not implemented")
     
     if args.num_tasks > 0:
         num_tasks = args.num_tasks # can discard data previously built
@@ -225,12 +212,11 @@ if __name__ == "__main__":
             model = HyperNetwork(batch_target_model=batch_target_model, hnet=hnet, input_type=input_type, encoder=encoder, latent_size=latent_size, batch=batch, sigma=sigma,
                                  base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, post_processing=post_processing, seed=seed)
         elif model_to_test == "experts":
-            # TODO adapt for other dataset and Target network
             if args.data == "cifar100" or args.data == "cifar10":
                 model = ConvTaskEnsembleCIFAR(
                 resnet, nbr_task=num_tasks, in_channels=in_channels, n=n, num_classes=num_classes)
             else:
-                raise NotImplementedError("Only cifar100")
+                raise NotImplementedError("Wrong dataset")
             if target_sparsity > 0:
                 model = sparsify_resnet(model, target_sparsity)
         else:

@@ -1,7 +1,4 @@
-from collections import OrderedDict
-
 from torch import nn, unique
-
 from torchvision.models import resnet18
 
 
