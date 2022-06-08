@@ -1,5 +1,6 @@
-from torch import nn, randn_like, cat, stack, permute
 from math import ceil
+
+from torch import cat, nn, permute, randn_like, stack
 
 
 class HnetChunked(nn.Module):

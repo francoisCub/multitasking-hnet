@@ -1,6 +1,8 @@
-from torch.nn import Module
-from torch import rand
 from math import sqrt
+
+from torch import rand
+from torch.nn import Module
+
 
 class Selector(Module):
     def __init__(self, start, size, total_size=None, shape=None):

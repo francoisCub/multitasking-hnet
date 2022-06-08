@@ -1,13 +1,11 @@
-
-import math
+import warnings
 
 import torch
 from torch import nn, rand
-import warnings
 
+from hypernetworks.chunked_hypernetwork import HnetChunked
 from hypernetworks.modules import Selector
 from hypernetworks.sparse_hypernetworks import BenesOne, HnetSparse
-from hypernetworks.chunked_hypernetwork import HnetChunked
 
 
 class HyperNetwork(nn.Module):
@@ -36,7 +34,7 @@ class HyperNetwork(nn.Module):
         elif self.input == "input":
             if encoder is None:
                 raise ValueError("Should have an encode for input hnet")
-            self.encoder = encoder  # get_encoder('encoder-resnet')
+            self.encoder = encoder
         elif self.input == "task":
             if num_tasks is None:
                 raise ValueError("For task hnet, give the number of task")
@@ -51,7 +49,7 @@ class HyperNetwork(nn.Module):
                 torch.randn_like(self.task_encoder.weight))
             self.mixer = nn.Bilinear(
                 self.latent_size, self.num_tasks, self.latent_size)
-            self.encoder = encoder  # get_encoder('encoder-resnet')
+            self.encoder = encoder
         else:
             raise ValueError()
         if normalize:
@@ -94,7 +92,6 @@ class HyperNetwork(nn.Module):
             self.core = BenesOne(self.latent_size, total_target_size, full=True)
         
         elif hnet == "chunked":
-            # raise NotImplementedError()
             self.core = HnetChunked(self.latent_size, total_target_size, batch=batch, n_chunks=nbr_chunks)
             
         else:
@@ -140,7 +137,7 @@ class HyperNetwork(nn.Module):
             z = self.task_encoder(z.float())
             if self.batch:
                 z = z.expand(x.shape[0], self.latent_size)
-        elif self.input == "input":  # input
+        elif self.input == "input":
             if self.encoder is not None:
                 z = self.encoder(x)
                 if self.aggregate and self.training:

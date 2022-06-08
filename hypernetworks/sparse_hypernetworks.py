@@ -40,12 +40,11 @@ class SparseLinear(nn.Module):
         else:
             raise ValueError("Distribution should be uniform or normal")
         indices_in = torch.clamp(indices_in, min=0, max=in_size-1)
-        # indices_in = indices_in % in_size
         indices = torch.stack([indices_out, indices_in])
         values = torch.randn(out_size * connectivity)
         indices, values = coalesce(indices.type(
             torch.long), values, out_size, in_size, op="add")
-        self.register_buffer('indices', indices) #nn.Parameter(indices.type(torch.float))
+        self.register_buffer('indices', indices)
         values = torch.rand(values.size(), dtype=values.dtype, layout=values.layout, device=values.device, generator=generator)
         values = (values - 0.5) * 2 * \
             math.sqrt(6 / ((1+activation_coeff**2)*(len(values)/out_size)))
@@ -155,7 +154,6 @@ class HnetSparse(nn.Module):
             if connectivity_type == "exponential-decrease":
                 connectivity_float *= 1.5
                 self.connectivity = math.ceil(connectivity_float)
-            # self.sigma *= 2
         new_connectivity, new_sigma, first = sparse_helper(
             self.connectivity, self.distribution, self.sigma, first)
         layer_list.append(SparseLinear(
@@ -258,14 +256,10 @@ class BenesOne(nn.Module):
 
         self.adjuster = nn.Linear(self.latent_size, next_latent)
 
-        # self.scaler = nn.Sequential(*[nn.ConvTranspose1d(1, 1, kernel_size=kernel_size, padding=kernel_size //
-        #                             2-1, stride=2, bias=False) for _ in range(int(math.log(before_out_size/next_latent, 2)))])
         self.scaler = nn.Linear(next_latent, before_out_size)
 
         self.benes = Benes(before_out_size, full=full)
 
-        # self.final = nn.Sequential(nn.ConvTranspose1d(
-        #     1, 1, kernel_size=kernel_size, padding=kernel_size//2-1, stride=2, bias=False))
         self.final = nn.Linear(before_out_size, out_size)
 
     def forward(self, x):
