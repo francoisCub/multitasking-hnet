@@ -1,18 +1,14 @@
 from collections import defaultdict
-from typing import Iterator, List, Tuple, Dict
-from numpy import dtype
-
-from pytorch_lightning import LightningDataModule
-from torch import LongTensor, randperm, stack, unique, cat
-from torch.utils.data import DataLoader, Sampler, SequentialSampler, Subset, random_split, Dataset, ConcatDataset
-from torchvision.datasets import CIFAR100, CIFAR10, MNIST
-from torchvision.transforms import (Compose, Normalize, RandomCrop,
-                                    RandomHorizontalFlip, ToTensor, RandomAffine, ColorJitter)
 from random import choice
-
-from data.utils import get_sorted_dataset
+from typing import Dict, Iterator, List
 
 import torch
+from pytorch_lightning import LightningDataModule
+from torch import LongTensor, randperm, stack
+from torch.utils.data import (ConcatDataset, DataLoader, Dataset, Sampler,
+                              SequentialSampler, random_split)
+from torchvision.datasets import MNIST
+from torchvision.transforms import Compose, Normalize, ToTensor
 from tqdm import tqdm
 
 

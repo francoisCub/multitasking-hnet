@@ -1,11 +1,11 @@
 from typing import Iterator, List
 
 from pytorch_lightning import LightningDataModule
-from torch import LongTensor, randperm, stack, unique, cat
+from torch import LongTensor, cat, randperm, stack, unique
 from torch.utils.data import DataLoader, Sampler, SequentialSampler, Subset
-from torchvision.datasets import CIFAR100, CIFAR10
+from torchvision.datasets import CIFAR10, CIFAR100
 from torchvision.transforms import (Compose, Normalize, RandomCrop,
-                                    RandomHorizontalFlip, ToTensor, RandomAffine)
+                                    RandomHorizontalFlip, ToTensor)
 
 from data.utils import get_sorted_dataset
 
@@ -48,7 +48,6 @@ class LightningCifar(LightningDataModule):
         self.batch_size = batch_size
         self.transform = Compose([RandomCrop(32, padding=4, padding_mode='reflect'),
                                   RandomHorizontalFlip(),
-                                #   RandomAffine(degrees=30, scale=(.9, 1.1), shear=0),
                                   ToTensor(),
                                   Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
         self.test_transform = Compose([

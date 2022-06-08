@@ -1,11 +1,10 @@
 from typing import Iterator, List
 
 from pytorch_lightning import LightningDataModule
-from torch import LongTensor, randperm, stack, unique, cat
+from torch import LongTensor, cat, randperm, stack, unique
 from torch.utils.data import DataLoader, Sampler, SequentialSampler, Subset
 from torchvision.datasets import MNIST
-from torchvision.transforms import (Compose, Normalize, RandomCrop,
-                                    RandomHorizontalFlip, ToTensor, RandomAffine)
+from torchvision.transforms import Compose, Normalize, ToTensor
 
 from data.utils import get_sorted_dataset
 

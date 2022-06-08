@@ -1,18 +1,15 @@
 from collections import defaultdict
-from typing import Iterator, List, Tuple, Dict
-from numpy import dtype
-
-from pytorch_lightning import LightningDataModule
-from torch import LongTensor, randperm, stack, unique, cat
-from torch.utils.data import DataLoader, Sampler, SequentialSampler, Subset, random_split
-from torchvision.datasets import CIFAR100, CIFAR10
-from torchvision.transforms import (Compose, Normalize, RandomCrop,
-                                    RandomHorizontalFlip, ToTensor, RandomAffine, ColorJitter)
 from random import choice
-
-from data.utils import get_sorted_dataset
+from typing import Dict, Iterator, List, Tuple
 
 import torch
+from pytorch_lightning import LightningDataModule
+from torch import LongTensor, randperm, stack, unique
+from torch.utils.data import (DataLoader, Sampler, SequentialSampler,
+                              random_split)
+from torchvision.datasets import CIFAR10, CIFAR100
+from torchvision.transforms import (ColorJitter, Compose, Normalize,
+                                    RandomCrop, RandomHorizontalFlip, ToTensor)
 
 
 class CifarBatchSampler(Sampler[List[int]]):
@@ -47,7 +44,6 @@ class LightningCifarTasks(LightningDataModule):
         self.batch_size = batch_size
         self.transform = Compose([RandomCrop(32, padding=4, padding_mode='reflect'),
                                   RandomHorizontalFlip(),
-                                #   RandomAffine(degrees=30, scale=(.9, 1.1), shear=0),
                                   ToTensor(),
                                   Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
         self.test_transform = Compose([
@@ -61,9 +57,6 @@ class LightningCifarTasks(LightningDataModule):
         self.num_class_per_task = num_class_per_task
         self.n_classes = n_classes
         self.dataset_gen = CIFAR100 if cifar == 100 else CIFAR10
-        # self.classes = sum([list(classes) for classes in tasks])
-        # if n_classes != num_tasks * num_class_per_task:
-        #     raise ValueError()
         self.num_tasks = num_tasks
         if len(tasks) != num_tasks:
              raise ValueError()

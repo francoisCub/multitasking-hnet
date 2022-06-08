@@ -151,6 +151,7 @@ figures
 *.yml
 *.pdf
 *.txt
+*.png
 *.sbatch
 train_cifar.py
 train_cifar_2.py
