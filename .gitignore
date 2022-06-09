@@ -163,3 +163,6 @@ loading_exp
 loading_exp_ckpt
 loading_exp_csv
 train.py
+
+!.gitignore
+!environment.yml
