@@ -6,6 +6,9 @@ from torch_sparse import coalesce, spmm
 
 
 class SparseLinear(nn.Module):
+    """
+        Sparse linear module
+    """
     def __init__(self, in_size, out_size, connectivity, distribution="uniform", sigma=torch.Tensor([1.0]), bias=False, activation_coeff=1.0, generator=None):
         super().__init__()
         self.in_size, self.out_size = in_size, out_size
@@ -91,6 +94,9 @@ def get_activation_coeff(activation):
         raise ValueError()
 
 class HnetSparse(nn.Module):
+    """
+        Sparse hypernetwork core implementation.
+    """
     def __init__(self, latent_size, output_size, base=None, num_layers=None,
                  distribution="uniform", connectivity_type="constant", connectivity=3, sigma=torch.Tensor([1.0]), activation="none", step=1, bias=False, seed=None):
         super().__init__()

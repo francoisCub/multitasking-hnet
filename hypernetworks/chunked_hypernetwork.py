@@ -4,6 +4,9 @@ from torch import cat, nn, permute, randn_like, stack
 
 
 class HnetChunked(nn.Module):
+    """
+        Chunked hypernetwork implementation
+    """
     def __init__(self, latent_size, output_size, batch, n_chunks):
         super().__init__()
         self.latent_size = latent_size

@@ -12,6 +12,9 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class LightningClassifierTask(LightningModule):
+    """
+        Main pytorch lightning trainer for task-conditioned models
+    """
     def __init__(self, model, batch_size, latent_size,
                  learning_rate=0.001, monitor=None, mode=None, patience=None, use_sgd=False, lr_reduce=False, use_optim="adam", lr_reduce_factor=0.1, **models_params):
         super().__init__()

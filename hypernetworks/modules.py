@@ -5,6 +5,9 @@ from torch.nn import Module
 
 
 class Selector(Module):
+    """
+        Selector module. Select a part of a target model parameters produced and rescaled them for proper initialization
+    """
     def __init__(self, start, size, total_size=None, shape=None):
         super().__init__()
         self.start = start
@@ -26,6 +29,9 @@ class Selector(Module):
 
 
 class Sparsify(Module):
+    """
+        Module that applies a binary mask on its input
+    """
     def __init__(self, start, size, global_mask_vector, total_size=None, shape=None, mask_vector=None):
         super().__init__()
         self.size = size

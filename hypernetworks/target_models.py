@@ -6,6 +6,9 @@ from hypernetworks.utils import delete_param, set_param
 
 
 class TargetModel(nn.Module):
+    """
+        Create a target model from a pytorch model.
+    """
     def __init__(self, target_model: nn.Module, mode="one_block") -> None:
         super().__init__()
         self.target_model = copy.deepcopy(target_model)
@@ -29,6 +32,10 @@ class TargetModel(nn.Module):
 
 
 class BatchTargetModel(nn.Module):
+    """
+        Create a bacth target model from a pytorch model.
+        There are as many target models as element in the batch.
+    """
     def __init__(self, batch_size, target_model) -> None:
         super().__init__()
         if batch_size < 1:

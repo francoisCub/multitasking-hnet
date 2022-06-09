@@ -241,8 +241,13 @@ if __name__ == "__main__":
                                            batch_target_model=batch_target_model.__class__.__name__, hnet=hnet, input_type=input_type, encoder=encoder.__class__.__name__, batch=batch, sigma=sigma.item(), # next model params
                                            base=base, num_tasks=num_tasks, distribution=distribution, connectivity_type=connectivity_type, connectivity=connectivity, activation=activation, step=step, seed=seed,
                                            nbr_chunks=nbr_chunks, bias_sparse=bias, normalize=normalize, name=args.name, resnet_name=resnet_name, num_class_per_task=num_class_per_task, data=args.data, target_name=args.target, trials=args.trials, target_sparsity=target_sparsity)
-
-        trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=0, auto_select_gpus=False, logger=[logger, csv_logger],
+        if torch.cuda.is_available():
+            gpus = 1
+            auto_select_gpus = True
+        else:
+            gpus = 0
+            auto_select_gpus = False
+        trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=gpus, auto_select_gpus=auto_select_gpus, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
 
         if special_training == "normal":
@@ -268,7 +273,7 @@ if __name__ == "__main__":
                 filename=name + f"-{args.name}" + "-{epoch:02d}",
             )
             lr_monitor_callback = LearningRateMonitor()
-            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=gpus, auto_select_gpus=auto_select_gpus, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
             pl_model.model.train_z_only()
             trainer.fit(pl_model, data_2)
@@ -289,7 +294,7 @@ if __name__ == "__main__":
                 filename=name + f"-{args.name}" + "-{epoch:02d}",
             )
             lr_monitor_callback = LearningRateMonitor()
-            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=gpus, auto_select_gpus=auto_select_gpus, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
             pl_model.model.train_z_only()
             pl_model.model.freeze_z()
@@ -308,7 +313,7 @@ if __name__ == "__main__":
                 filename=name + f"-{args.name}" + "-{epoch:02d}",
             )
             lr_monitor_callback = LearningRateMonitor()
-            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=gpus, auto_select_gpus=auto_select_gpus, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
             pl_model.model.train_z_only()
             pl_model.model.freeze_z()
@@ -341,7 +346,7 @@ if __name__ == "__main__":
                 filename=name + f"-{args.name}" + "-{epoch:02d}",
             )
             lr_monitor_callback = LearningRateMonitor()
-            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=gpus, auto_select_gpus=auto_select_gpus, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])  # reload_dataloaders_every_n_epochs=1
             pl_model.model.train_z_only()
             trainer.fit(pl_model, data_2)
@@ -381,7 +386,7 @@ if __name__ == "__main__":
                 filename=name + f"-{args.name}" + "-{epoch:02d}",
             )
             lr_monitor_callback = LearningRateMonitor()
-            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=gpus, auto_select_gpus=auto_select_gpus, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])
             trainer.fit(pl_model, data_2)
             if not fast_dev_run:
@@ -404,7 +409,7 @@ if __name__ == "__main__":
                 filename=name + f"-{args.name}" + "-{epoch:02d}",
             )
             lr_monitor_callback = LearningRateMonitor()
-            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=gpus, auto_select_gpus=auto_select_gpus, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])
             trainer.fit(pl_model, data_1)
             if not fast_dev_run:
@@ -422,7 +427,7 @@ if __name__ == "__main__":
                 filename=name + f"-{args.name}" + "-{epoch:02d}",
             )
             lr_monitor_callback = LearningRateMonitor()
-            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=1, auto_select_gpus=True, logger=[logger, csv_logger],
+            trainer = Trainer(fast_dev_run=fast_dev_run, max_epochs=max_epochs, enable_model_summary=True, gpus=gpus, auto_select_gpus=auto_select_gpus, logger=[logger, csv_logger],
                           track_grad_norm=2, accumulate_grad_batches=accumulate_grad_batches, gradient_clip_val=gradient_clip_val, callbacks=[early_stopping_callback, lr_monitor_callback, checkpoint_callback])
             pl_model.model.train_z_only()
             trainer.fit(pl_model, data_2)

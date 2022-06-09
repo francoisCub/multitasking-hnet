@@ -9,6 +9,9 @@ from hypernetworks.sparse_hypernetworks import BenesOne, HnetSparse
 
 
 class HyperNetwork(nn.Module):
+    """ Hypernetwork class.
+        Implement a hypernetwork (linear, MLP, sparse, chunked, ...) for a given target model (see target_models.py).
+    """
     def __init__(self, batch_target_model: nn.Module, input_type="learned", hnet="linear", latent_size=32,
                  encoder=None, mode="one_block", variation=False, batch=True, one_vector=False, num_tasks=None, aggregate=False,
                  distribution="normal", connectivity_type="linear-decrease", connectivity=3, sigma=torch.Tensor([2]), activation="prelu", step=1, base=2, nbr_chunks=8, bias_sparse=False, normalize=True, post_processing=None, seed=None, zmode=None) -> None:
